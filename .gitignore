@@ -1,0 +1,15 @@
+*.dll
+*.exp
+*.ilk
+*.lib
+*.pdb
+*.exe
+*.so
+test.??*
+dtest
+core
+.vscode/
+*.o
+/amoeba_test
+*.a
+*.selections.json

@@ -1,0 +1,7 @@
+name "cassowary-amoeba"
+description "D port of Cassowary algorithm c89 implementation"
+authors "drug007"
+copyright "Copyright © 2019-2020, drug007"
+license "MIT"
+targetType "sourceLibrary"
+dependency "mir-core" version="~>1.0.3"

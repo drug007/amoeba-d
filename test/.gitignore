@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+test_betterc.so
+test_betterc.dylib
+test_betterc.dll
+test_betterc.a
+test_betterc.lib
+test_betterc-test-*
+*.exe
+*.o
+*.obj
+*.lst
+/test_betterc
+*.selections.json
+/test

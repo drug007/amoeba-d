@@ -1,0 +1,8 @@
+name "test"
+description "test betterc mode"
+targetType "executable"
+authors "drug007"
+copyright "Copyright © 2019, drug007"
+license "MIT"
+dependency "cassowary-amoeba" path=".."
+dflags "-betterC"
