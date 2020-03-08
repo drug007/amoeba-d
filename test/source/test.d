@@ -28,7 +28,7 @@ extern(C)
 void *null_allocf(void *ud, void *ptr, size_t ns, size_t os) nothrow @nogc
 { cast(void)ud, cast(void)ptr, cast(void)ns, cast(void)os; return null; }
 
-void am_dumpkey(am_Symbol sym) {
+void am_dumpkey(Symbol sym) {
 	int ch = 'v';
 	switch (sym.type) {
 	case AM_EXTERNAL: ch = 'v'; break;
@@ -40,11 +40,11 @@ void am_dumpkey(am_Symbol sym) {
 	printf("%c%d", ch, cast(int)sym.id);
 }
 
-void am_dumprow(am_Row *row) {
-	am_Term *term = null;
+void am_dumprow(Row *row) {
+	Term *term = null;
 	printf("%g", row.constant);
-	while (am_nextentry(&row.terms, cast(am_Entry**)&term)) {
-		am_Float multiplier = term.multiplier;
+	while (am_nextentry(&row.terms, cast(Entry**)&term)) {
+		Float multiplier = term.multiplier;
 		printf(" %c ", multiplier > 0.0 ? '+' : '-');
 		if (multiplier < 0.0) multiplier = -multiplier;
 		if (!am_approx(multiplier, 1.0f))
@@ -54,14 +54,14 @@ void am_dumprow(am_Row *row) {
 	printf("\n");
 }
 
-void am_dumpsolver(am_Solver *solver) {
-	am_Row *row = null;
+void am_dumpsolver(Solver *solver) {
+	Row *row = null;
 	int idx = 0;
 	printf("-------------------------------\n");
 	printf("solver: ");
 	am_dumprow(&solver.objective);
 	printf("rows(%d):\n", cast(int)solver.rows.count);
-	while (am_nextentry(&solver.rows, cast(am_Entry**)&row)) {
+	while (am_nextentry(&solver.rows, cast(Entry**)&row)) {
 		printf("%d. ", ++idx);
 		am_dumpkey(am_key(row));
 		printf(" = ");
@@ -71,25 +71,25 @@ void am_dumpsolver(am_Solver *solver) {
 }
 
 extern(C)
-am_Constraint* new_constraint(am_Solver* in_solver, double in_strength,
-		am_Variable* in_term1, double in_factor1, int in_relation,
+Constraint* new_constraint(Solver* in_solver, double in_strength,
+		Variable* in_term1, double in_factor1, int in_relation,
 		double in_constant, ...)
 {
 	int result;
 	va_list argp;
-	am_Constraint* c;
+	Constraint* c;
 	assert(in_solver && in_term1);
-	c = am_newconstraint(in_solver, cast(am_Float)in_strength);
+	c = am_newconstraint(in_solver, cast(Float)in_strength);
 	if(!c) return null;
-	am_addterm(c, in_term1, cast(am_Float)in_factor1);
+	am_addterm(c, in_term1, cast(Float)in_factor1);
 	am_setrelation(c, in_relation);
-	if(in_constant) am_addconstant(c, cast(am_Float)in_constant);
+	if(in_constant) am_addconstant(c, cast(Float)in_constant);
 	va_start(argp, in_constant);
 	while(1) {
-		am_Variable* va_term = va_arg!(am_Variable*)(argp);
+		Variable* va_term = va_arg!(Variable*)(argp);
 		double va_factor = va_arg!double(argp);
 		if(va_term is null) break;
-		am_addterm(c, va_term, cast(am_Float)va_factor);
+		am_addterm(c, va_term, cast(Float)va_factor);
 	}
 	va_end(argp);
 	result = am_add(c);
@@ -98,12 +98,12 @@ am_Constraint* new_constraint(am_Solver* in_solver, double in_strength,
 }
 
 void test_all() {
-	am_Solver *solver;
-	am_Variable *xl;
-	am_Variable *xm;
-	am_Variable *xr;
-	am_Variable *xd;
-	am_Constraint* c1, c2, c3, c4, c5, c6;
+	Solver *solver;
+	Variable *xl;
+	Variable *xm;
+	Variable *xr;
+	Variable *xd;
+	Constraint* c1, c2, c3, c4, c5, c6;
 	printf("\n\n==========\ntest all\n");
 
 	solver = am_newsolver(&null_allocf, null);
@@ -298,12 +298,12 @@ void test_binarytree() {
 	int nPointsCount, nResult, nRow;
 	int nCurrentRowPointsCount = 1;
 	int nCurrentRowFirstPointIndex = 0;
-	am_Constraint *pC;
-	am_Solver *pSolver;
-	am_Variable** arrX, arrY;
+	Constraint *pC;
+	Solver *pSolver;
+	Variable** arrX, arrY;
 
 	printf("\n\n==========\ntest binarytree\n");
-	arrX = cast(am_Variable**)malloc(2048 * (am_Variable*).sizeof);
+	arrX = cast(Variable**)malloc(2048 * (Variable*).sizeof);
 	if (arrX is null) return;
 	arrY = arrX + 1024;
 
@@ -397,9 +397,9 @@ void test_binarytree() {
 }
 
 void test_unbounded() {
-	am_Solver *solver;
-	am_Variable* x, y;
-	am_Constraint *c;
+	Solver *solver;
+	Variable* x, y;
+	Constraint *c;
 	printf("\n\n==========\ntest unbound\n");
 
 	solver = am_newsolver(&debug_allocf, null);
@@ -519,9 +519,9 @@ void test_unbounded() {
 }
 
 void test_strength() {
-	am_Solver *solver;
-	am_Variable* x, y;
-	am_Constraint *c;
+	Solver *solver;
+	Variable* x, y;
+	Constraint *c;
 	printf("\n\n==========\ntest strength\n");
 
 	solver = am_newsolver(&debug_allocf, null);
@@ -559,24 +559,24 @@ void test_suggest() {
 	version(all)
 	{
 		/* This should be valid but fails the (enter.id != 0) assertion in am_dual_optimize() */
-		am_Float strength1 = AM_REQUIRED;
-		am_Float strength2 = AM_REQUIRED;
-		am_Float width = 76;
+		Float strength1 = AM_REQUIRED;
+		Float strength2 = AM_REQUIRED;
+		Float width = 76;
 	}
 	else
 	{
 		/* This mostly works, but still insists on forcing left_child_l = 0 which it should not */
-		am_Float strength1 = AM_STRONG;
-		am_Float strength2 = AM_WEAK;
-		am_Float width = 76;
+		Float strength1 = AM_STRONG;
+		Float strength2 = AM_WEAK;
+		Float width = 76;
 	}
-	am_Float delta = 0;
-	am_Float pos;
-	am_Solver *solver;
-	am_Variable* splitter_l,     splitter_w,     splitter_r;
-	am_Variable* left_child_l,   left_child_w,   left_child_r;
-	am_Variable* splitter_bar_l, splitter_bar_w, splitter_bar_r;
-	am_Variable* right_child_l,  right_child_w,  right_child_r;
+	Float delta = 0;
+	Float pos;
+	Solver *solver;
+	Variable* splitter_l,     splitter_w,     splitter_r;
+	Variable* left_child_l,   left_child_w,   left_child_r;
+	Variable* splitter_bar_l, splitter_bar_w, splitter_bar_r;
+	Variable* right_child_l,  right_child_w,  right_child_r;
 	printf("\n\n==========\ntest suggest\n");
 
 	solver = am_newsolver(&debug_allocf, null);
@@ -655,12 +655,12 @@ void test_suggest() {
 }
 
 void test_cycling() {
-	am_Solver * solver = am_newsolver(null, null);
+	Solver * solver = am_newsolver(null, null);
 
-	am_Variable * va = am_newvariable(solver);
-	am_Variable * vb = am_newvariable(solver);
-	am_Variable * vc = am_newvariable(solver);
-	am_Variable * vd = am_newvariable(solver);
+	Variable * va = am_newvariable(solver);
+	Variable * vb = am_newvariable(solver);
+	Variable * vc = am_newvariable(solver);
+	Variable * vd = am_newvariable(solver);
 
 	am_addedit(va, AM_STRONG);
 	printf("after edit\n");
@@ -668,7 +668,7 @@ void test_cycling() {
 
 	/* vb == va */
 	{
-		am_Constraint * c = am_newconstraint(solver, AM_REQUIRED);
+		Constraint * c = am_newconstraint(solver, AM_REQUIRED);
 		int ret = 0;
 		ret |= am_addterm(c, vb, 1.0);
 		ret |= am_setrelation(c, AM_EQUAL);
@@ -680,7 +680,7 @@ void test_cycling() {
 
 	/* vb == vc */
 	{
-		am_Constraint * c = am_newconstraint(solver, AM_REQUIRED);
+		Constraint * c = am_newconstraint(solver, AM_REQUIRED);
 		int ret = 0;
 		ret |= am_addterm(c, vb, 1.0);
 		ret |= am_setrelation(c, AM_EQUAL);
@@ -692,7 +692,7 @@ void test_cycling() {
 
 	/* vc == vd */
 	{
-		am_Constraint * c = am_newconstraint(solver, AM_REQUIRED);
+		Constraint * c = am_newconstraint(solver, AM_REQUIRED);
 		int ret = 0;
 		ret |= am_addterm(c, vc, 1.0);
 		ret |= am_setrelation(c, AM_EQUAL);
@@ -704,7 +704,7 @@ void test_cycling() {
 
 	/* vd == va */
 	{
-		am_Constraint * c = am_newconstraint(solver, AM_REQUIRED);
+		Constraint * c = am_newconstraint(solver, AM_REQUIRED);
 		int ret = 0;
 		ret |= am_addterm(c, vd, 1.0);
 		ret |= am_setrelation(c, AM_EQUAL);
