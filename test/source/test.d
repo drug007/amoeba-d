@@ -47,7 +47,7 @@ void am_dumprow(Row *row) {
 		Float multiplier = term.multiplier;
 		printf(" %c ", multiplier > 0.0 ? '+' : '-');
 		if (multiplier < 0.0) multiplier = -multiplier;
-		if (!am_approx(multiplier, 1.0f))
+		if (!approx(multiplier, 1.0f))
 			printf("%g*", multiplier);
 		am_dumpkey(am_key(term));
 	}
