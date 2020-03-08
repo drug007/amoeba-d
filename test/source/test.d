@@ -43,7 +43,7 @@ void dumpkey(Symbol sym) {
 void dumprow(Row *row) {
 	Term *term = null;
 	printf("%g", row.constant);
-	while (nextentry(&row.terms, cast(Entry**)&term)) {
+	while (nextEntry(&row.terms, cast(Entry**)&term)) {
 		Float multiplier = term.multiplier;
 		printf(" %c ", multiplier > 0.0 ? '+' : '-');
 		if (multiplier < 0.0) multiplier = -multiplier;
@@ -61,7 +61,7 @@ void dumpsolver(Solver *solver) {
 	printf("solver: ");
 	dumprow(&solver.objective);
 	printf("rows(%d):\n", cast(int)solver.rows.count);
-	while (nextentry(&solver.rows, cast(Entry**)&row)) {
+	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 		printf("%d. ", ++idx);
 		dumpkey(key(row));
 		printf(" = ");
@@ -79,17 +79,17 @@ Constraint* new_constraint(Solver* in_solver, double in_strength,
 	va_list argp;
 	Constraint* c;
 	assert(in_solver && in_term1);
-	c = newconstraint(in_solver, cast(Float)in_strength);
+	c = newConstraint(in_solver, cast(Float)in_strength);
 	if(!c) return null;
-	addterm(c, in_term1, cast(Float)in_factor1);
-	setrelation(c, in_relation);
-	if(in_constant) addconstant(c, cast(Float)in_constant);
+	addTerm(c, in_term1, cast(Float)in_factor1);
+	setRelation(c, in_relation);
+	if(in_constant) addConstant(c, cast(Float)in_constant);
 	va_start(argp, in_constant);
 	while(1) {
 		Variable* va_term = va_arg!(Variable*)(argp);
 		double va_factor = va_arg!double(argp);
 		if(va_term is null) break;
-		addterm(c, va_term, cast(Float)va_factor);
+		addTerm(c, va_term, cast(Float)va_factor);
 	}
 	va_end(argp);
 	result = add(c);
@@ -114,109 +114,109 @@ void test_all() {
 	delsolver(solver);
 
 	solver = newsolver(&debug_allocf, null);
-	xl = newvariable(solver);
-	xm = newvariable(solver);
-	xr = newvariable(solver);
+	xl = newVariable(solver);
+	xm = newVariable(solver);
+	xr = newVariable(solver);
 
-	assert(variableid(null) == -1);
-	assert(variableid(xl) == 1);
-	assert(variableid(xm) == 2);
-	assert(variableid(xr) == 3);
-	assert(!hasedit(null));
-	assert(!hasedit(xl));
-	assert(!hasedit(xm));
-	assert(!hasedit(xr));
-	assert(!hasconstraint(null));
+	assert(variableId(null) == -1);
+	assert(variableId(xl) == 1);
+	assert(variableId(xm) == 2);
+	assert(variableId(xr) == 3);
+	assert(!hasEdit(null));
+	assert(!hasEdit(xl));
+	assert(!hasEdit(xm));
+	assert(!hasEdit(xr));
+	assert(!hasConstraint(null));
 
-	xd = newvariable(solver);
-	delvariable(xd);
+	xd = newVariable(solver);
+	delVariable(xd);
 
-	assert(setrelation(null, AM_GREATEQUAL) == AM_FAILED);
+	assert(setRelation(null, AM_GREATEQUAL) == AM_FAILED);
 
-	c1 = newconstraint(solver, AM_REQUIRED);
-	addterm(c1, xl, 1.0);
-	setrelation(c1, AM_GREATEQUAL);
+	c1 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c1, xl, 1.0);
+	setRelation(c1, AM_GREATEQUAL);
 	auto ret = add(c1);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	assert(setrelation(c1, AM_GREATEQUAL) == AM_FAILED);
+	assert(setRelation(c1, AM_GREATEQUAL) == AM_FAILED);
 	assert(setstrength(c1, AM_REQUIRED-10) == AM_OK);
 	assert(setstrength(c1, AM_REQUIRED) == AM_OK);
 
-	assert(hasconstraint(c1));
-	assert(!hasedit(xl));
+	assert(hasConstraint(c1));
+	assert(!hasEdit(xl));
 
-	c2 = newconstraint(solver, AM_REQUIRED);
-	addterm(c2, xl, 1.0);
-	setrelation(c2, AM_EQUAL);
+	c2 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c2, xl, 1.0);
+	setRelation(c2, AM_EQUAL);
 	ret = add(c2);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	resetsolver(solver, 1);
-	delconstraint(c1);
-	delconstraint(c2);
+	delConstraint(c1);
+	delConstraint(c2);
 	dumpsolver(solver);
 
 	/* c1: 2*xm == xl + xr */
-	c1 = newconstraint(solver, AM_REQUIRED);
-	addterm(c1, xm, 2.0);
-	setrelation(c1, AM_EQUAL);
-	addterm(c1, xl, 1.0);
-	addterm(c1, xr, 1.0);
+	c1 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c1, xm, 2.0);
+	setRelation(c1, AM_EQUAL);
+	addTerm(c1, xl, 1.0);
+	addTerm(c1, xr, 1.0);
 	ret = add(c1);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* c2: xl + 10 <= xr */
-	c2 = newconstraint(solver, AM_REQUIRED);
-	addterm(c2, xl, 1.0);
-	addconstant(c2, 10.0);
-	setrelation(c2, AM_LESSEQUAL);
-	addterm(c2, xr, 1.0);
+	c2 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c2, xl, 1.0);
+	addConstant(c2, 10.0);
+	setRelation(c2, AM_LESSEQUAL);
+	addTerm(c2, xr, 1.0);
 	ret = add(c2);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* c3: xr <= 100 */
-	c3 = newconstraint(solver, AM_REQUIRED);
-	addterm(c3, xr, 1.0);
-	setrelation(c3, AM_LESSEQUAL);
-	addconstant(c3, 100.0);
+	c3 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c3, xr, 1.0);
+	setRelation(c3, AM_LESSEQUAL);
+	addConstant(c3, 100.0);
 	ret = add(c3);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* c4: xl >= 0 */
-	c4 = newconstraint(solver, AM_REQUIRED);
-	addterm(c4, xl, 1.0);
-	setrelation(c4, AM_GREATEQUAL);
-	addconstant(c4, 0.0);
+	c4 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c4, xl, 1.0);
+	setRelation(c4, AM_GREATEQUAL);
+	addConstant(c4, 0.0);
 	ret = add(c4);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	c5 = cloneconstraint(c4, AM_REQUIRED);
+	c5 = cloneConstraint(c4, AM_REQUIRED);
 	ret = add(c5);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 	remove(c5);
 
-	c5 = newconstraint(solver, AM_REQUIRED);
-	addterm(c5, xl, 1.0);
-	setrelation(c5, AM_EQUAL);
-	addconstant(c5, 0.0);
+	c5 = newConstraint(solver, AM_REQUIRED);
+	addTerm(c5, xl, 1.0);
+	setRelation(c5, AM_EQUAL);
+	addConstant(c5, 0.0);
 	ret = add(c5);
 	assert(ret == AM_OK);
 
-	c6 = cloneconstraint(c4, AM_REQUIRED);
+	c6 = cloneConstraint(c4, AM_REQUIRED);
 	ret = add(c6);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	resetconstraint(c6);
-	delconstraint(c6);
+	resetConstraint(c6);
+	delConstraint(c6);
 
 	remove(c1);
 	remove(c2);
@@ -255,7 +255,7 @@ void test_all() {
 			value(xm),
 			value(xr));
 
-	assert(hasedit(xm));
+	assert(hasEdit(xm));
 
 	printf("suggest to 0.0\n");
 	suggest(xm, 0.0);
@@ -319,8 +319,8 @@ void test_binarytree() {
 	pSolver = newsolver(&debug_allocf, null);
 
 	/* Xroot=500, Yroot=10 */
-	arrX[0] = newvariable(pSolver);
-	arrY[0] = newvariable(pSolver);
+	arrX[0] = newVariable(pSolver);
+	arrY[0] = newVariable(pSolver);
 	addedit(arrX[0], AM_STRONG);
 	addedit(arrY[0], AM_STRONG);
 	suggest(arrX[0], 500.0f + X_OFFSET);
@@ -333,44 +333,44 @@ void test_binarytree() {
 		nCurrentRowPointsCount *= 2;
 
 		for (nPoint = 0; nPoint < nCurrentRowPointsCount; nPoint++) {
-			arrX[nCurrentRowFirstPointIndex + nPoint] = newvariable(pSolver);
-			arrY[nCurrentRowFirstPointIndex + nPoint] = newvariable(pSolver);
+			arrX[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
+			arrY[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
 
 			/* Ycur = Yprev_row + 15 */
-			pC = newconstraint(pSolver, AM_REQUIRED);
-			addterm(pC, arrY[nCurrentRowFirstPointIndex + nPoint], 1.0);
-			setrelation(pC, AM_EQUAL);
-			addterm(pC, arrY[nCurrentRowFirstPointIndex - 1], 1.0);
-			addconstant(pC, 15.0);
+			pC = newConstraint(pSolver, AM_REQUIRED);
+			addTerm(pC, arrY[nCurrentRowFirstPointIndex + nPoint], 1.0);
+			setRelation(pC, AM_EQUAL);
+			addTerm(pC, arrY[nCurrentRowFirstPointIndex - 1], 1.0);
+			addConstant(pC, 15.0);
 			nResult = add(pC);
 			assert(nResult == AM_OK);
 
 			if (nPoint > 0) {
 				/* Xcur >= XPrev + 5 */
-				pC = newconstraint(pSolver, AM_REQUIRED);
-				addterm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
-				setrelation(pC, AM_GREATEQUAL);
-				addterm(pC, arrX[nCurrentRowFirstPointIndex + nPoint - 1], 1.0);
-				addconstant(pC, 5.0);
+				pC = newConstraint(pSolver, AM_REQUIRED);
+				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
+				setRelation(pC, AM_GREATEQUAL);
+				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint - 1], 1.0);
+				addConstant(pC, 5.0);
 				nResult = add(pC);
 				assert(nResult == AM_OK);
 			} else {
 				/* When these lines added it crashes at the line 109 */
-				pC = newconstraint(pSolver, AM_REQUIRED);
-				addterm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
-				setrelation(pC, AM_GREATEQUAL);
-				addconstant(pC, 0.0);
+				pC = newConstraint(pSolver, AM_REQUIRED);
+				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
+				setRelation(pC, AM_GREATEQUAL);
+				addConstant(pC, 0.0);
 				nResult = add(pC);
 				assert(nResult == AM_OK);
 			}
 
 			if ((nPoint % 2) == 1) {
 				/* Xparent = 0.5 * Xcur + 0.5 * Xprev */
-				pC = newconstraint(pSolver, AM_REQUIRED);
-				addterm(pC, arrX[nPreviousRowFirstPointIndex + nParentPoint], 1.0);
-				setrelation(pC, AM_EQUAL);
-				addterm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 0.5);
-				addterm(pC, arrX[nCurrentRowFirstPointIndex + nPoint - 1], 0.5);
+				pC = newConstraint(pSolver, AM_REQUIRED);
+				addTerm(pC, arrX[nPreviousRowFirstPointIndex + nParentPoint], 1.0);
+				setRelation(pC, AM_EQUAL);
+				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 0.5);
+				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint - 1], 0.5);
 				/* It crashes here (at the 3rd call of add(...))!  */
 				nResult = add(pC);
 				assert(nResult == AM_OK);
@@ -403,22 +403,22 @@ void test_unbounded() {
 	printf("\n\n==========\ntest unbound\n");
 
 	solver = newsolver(&debug_allocf, null);
-	x = newvariable(solver);
-	y = newvariable(solver);
+	x = newVariable(solver);
+	y = newVariable(solver);
 
 	/* 10.0 == 0.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addconstant(c, 10.0);
-	setrelation(c, AM_EQUAL);
+	c = newConstraint(solver, AM_REQUIRED);
+	addConstant(c, 10.0);
+	setRelation(c, AM_EQUAL);
 	auto ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_UNSATISFIED);
 	dumpsolver(solver);
 
 	/* 0.0 == 0.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addconstant(c, 0.0);
-	setrelation(c, AM_EQUAL);
+	c = newConstraint(solver, AM_REQUIRED);
+	addConstant(c, 0.0);
+	setRelation(c, AM_EQUAL);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
@@ -427,30 +427,30 @@ void test_unbounded() {
 	resetsolver(solver, 1);
 
 	/* x >= 10.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_GREATEQUAL);
-	addconstant(c, 10.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_GREATEQUAL);
+	addConstant(c, 10.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* x == 2*y */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_EQUAL);
-	addterm(c, y, 2.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_EQUAL);
+	addTerm(c, y, 2.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* y == 3*x */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, y, 1.0);
-	setrelation(c, AM_EQUAL);
-	addterm(c, x, 3.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, y, 1.0);
+	setRelation(c, AM_EQUAL);
+	addTerm(c, x, 3.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_UNBOUND);
@@ -459,19 +459,19 @@ void test_unbounded() {
 	resetsolver(solver, 1);
 
 	/* x >= 10.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_GREATEQUAL);
-	addconstant(c, 10.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_GREATEQUAL);
+	addConstant(c, 10.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* x <= 0.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_LESSEQUAL);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_LESSEQUAL);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_UNBOUND);
@@ -482,30 +482,30 @@ void test_unbounded() {
 	resetsolver(solver, 1);
 
 	/* x == 10.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_EQUAL);
-	addconstant(c, 10.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_EQUAL);
+	addConstant(c, 10.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
 	/* x == 20.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_EQUAL);
-	addconstant(c, 20.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_EQUAL);
+	addConstant(c, 20.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_UNSATISFIED);
 	dumpsolver(solver);
 
 	/* x == 10.0 */
-	c = newconstraint(solver, AM_REQUIRED);
-	addterm(c, x, 1.0);
-	setrelation(c, AM_EQUAL);
-	addconstant(c, 10.0);
+	c = newConstraint(solver, AM_REQUIRED);
+	addTerm(c, x, 1.0);
+	setRelation(c, AM_EQUAL);
+	addConstant(c, 10.0);
 	ret = add(c);
 	printf("ret = %d\n", ret);
 	assert(ret == AM_OK);
@@ -525,9 +525,9 @@ void test_strength() {
 	printf("\n\n==========\ntest strength\n");
 
 	solver = newsolver(&debug_allocf, null);
-	autoupdate(solver, 1);
-	x = newvariable(solver);
-	y = newvariable(solver);
+	autoUpdate(solver, 1);
+	x = newVariable(solver);
+	y = newVariable(solver);
 
 	/* x <= y */
 	new_constraint(solver, AM_STRONG, x, 1.0, AM_LESSEQUAL, 0.0,
@@ -580,18 +580,18 @@ void test_suggest() {
 	printf("\n\n==========\ntest suggest\n");
 
 	solver = newsolver(&debug_allocf, null);
-	splitter_l = newvariable(solver);
-	splitter_w = newvariable(solver);
-	splitter_r = newvariable(solver);
-	left_child_l = newvariable(solver);
-	left_child_w = newvariable(solver);
-	left_child_r = newvariable(solver);
-	splitter_bar_l = newvariable(solver);
-	splitter_bar_w = newvariable(solver);
-	splitter_bar_r = newvariable(solver);
-	right_child_l = newvariable(solver);
-	right_child_w = newvariable(solver);
-	right_child_r = newvariable(solver);
+	splitter_l = newVariable(solver);
+	splitter_w = newVariable(solver);
+	splitter_r = newVariable(solver);
+	left_child_l = newVariable(solver);
+	left_child_w = newVariable(solver);
+	left_child_r = newVariable(solver);
+	splitter_bar_l = newVariable(solver);
+	splitter_bar_w = newVariable(solver);
+	splitter_bar_r = newVariable(solver);
+	right_child_l = newVariable(solver);
+	right_child_w = newVariable(solver);
+	right_child_r = newVariable(solver);
 
 	/* splitter_r = splitter_l + splitter_w */
 	/* left_child_r = left_child_l + left_child_w */
@@ -657,10 +657,10 @@ void test_suggest() {
 void test_cycling() {
 	Solver * solver = newsolver(null, null);
 
-	Variable * va = newvariable(solver);
-	Variable * vb = newvariable(solver);
-	Variable * vc = newvariable(solver);
-	Variable * vd = newvariable(solver);
+	Variable * va = newVariable(solver);
+	Variable * vb = newVariable(solver);
+	Variable * vc = newVariable(solver);
+	Variable * vd = newVariable(solver);
 
 	addedit(va, AM_STRONG);
 	printf("after edit\n");
@@ -668,11 +668,11 @@ void test_cycling() {
 
 	/* vb == va */
 	{
-		Constraint * c = newconstraint(solver, AM_REQUIRED);
+		Constraint * c = newConstraint(solver, AM_REQUIRED);
 		int ret = 0;
-		ret |= addterm(c, vb, 1.0);
-		ret |= setrelation(c, AM_EQUAL);
-		ret |= addterm(c, va, 1.0);
+		ret |= addTerm(c, vb, 1.0);
+		ret |= setRelation(c, AM_EQUAL);
+		ret |= addTerm(c, va, 1.0);
 		ret |= add(c);
 		assert(ret == AM_OK);
 		dumpsolver(solver);
@@ -680,11 +680,11 @@ void test_cycling() {
 
 	/* vb == vc */
 	{
-		Constraint * c = newconstraint(solver, AM_REQUIRED);
+		Constraint * c = newConstraint(solver, AM_REQUIRED);
 		int ret = 0;
-		ret |= addterm(c, vb, 1.0);
-		ret |= setrelation(c, AM_EQUAL);
-		ret |= addterm(c, vc, 1.0);
+		ret |= addTerm(c, vb, 1.0);
+		ret |= setRelation(c, AM_EQUAL);
+		ret |= addTerm(c, vc, 1.0);
 		ret |= add(c);
 		assert(ret == AM_OK);
 		dumpsolver(solver);
@@ -692,11 +692,11 @@ void test_cycling() {
 
 	/* vc == vd */
 	{
-		Constraint * c = newconstraint(solver, AM_REQUIRED);
+		Constraint * c = newConstraint(solver, AM_REQUIRED);
 		int ret = 0;
-		ret |= addterm(c, vc, 1.0);
-		ret |= setrelation(c, AM_EQUAL);
-		ret |= addterm(c, vd, 1.0);
+		ret |= addTerm(c, vc, 1.0);
+		ret |= setRelation(c, AM_EQUAL);
+		ret |= addTerm(c, vd, 1.0);
 		ret |= add(c);
 		assert(ret == AM_OK);
 		dumpsolver(solver);
@@ -704,11 +704,11 @@ void test_cycling() {
 
 	/* vd == va */
 	{
-		Constraint * c = newconstraint(solver, AM_REQUIRED);
+		Constraint * c = newConstraint(solver, AM_REQUIRED);
 		int ret = 0;
-		ret |= addterm(c, vd, 1.0);
-		ret |= setrelation(c, AM_EQUAL);
-		ret |= addterm(c, va, 1.0);
+		ret |= addTerm(c, vd, 1.0);
+		ret |= setRelation(c, AM_EQUAL);
+		ret |= addTerm(c, va, 1.0);
 		ret |= add(c);
 		assert(ret == AM_OK); /* asserts here */
 		dumpsolver(solver);

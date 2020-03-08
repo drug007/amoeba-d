@@ -40,7 +40,6 @@ enum AM_DUMMY    = 3;
 
 pragma(inline, true)
 {
-@nogc nothrow:
 	auto isexternal(Key)(Key key)  { return key.type == AM_EXTERNAL; }
 	auto isslack(Key)(Key key)     { return key.type == AM_SLACK; }
 	auto iserror(Key)(Key key)     { return key.type == AM_ERROR; }
@@ -155,23 +154,23 @@ struct Solver
 
 /* utils */
 
-int approx(Float a, Float b) @nogc nothrow
+int approx(Float a, Float b)
 {
 	return a > b ? (a - b < FloatEpsilon) : (b - a < FloatEpsilon);
 }
 
-int nearzero(Float a) @nogc nothrow
+int nearZero(Float a)
 {
 	return approx(a, 0.0f);
 }
 
-void initsymbol(Solver *solver, Symbol *sym, int type)
+void initSymbol(Solver *solver, Symbol *sym, int type)
 {
 	if (sym.id == 0)
-		*sym = newsymbol(solver, type);
+		*sym = newSymbol(solver, type);
 }
 
-void freepool(Solver *solver, MemPool *pool) {
+void freePool(Solver *solver, MemPool *pool) {
 	const size_t offset = AM_POOLSIZE - (void*).sizeof;
 	while (pool.pages !is null) {
 		void *next = *cast(void**)(cast(char*)pool.pages + offset);
@@ -208,7 +207,7 @@ void freeMem(MemPool *pool, void *obj)
 	pool.freed = obj;
 }
 
-Symbol newsymbol(Solver *solver, int type)
+Symbol newSymbol(Solver *solver, int type)
 {
 	Symbol sym;
 	uint id = ++solver.symbol_count;
@@ -234,28 +233,28 @@ pragma(inline, true)
 	auto index(H, I)(H h, I i) { return cast(Entry*)(cast(char*)(h) + (i)); }
 }
 
-void delkey(Table *t, Entry *entry)
+void delKey(Table *t, Entry *entry)
 {
 	entry.key = Symbol(), --t.count;
 }
 
-void inittable(Table *t, size_t entry_size)
+void initTable(Table *t, size_t entry_size)
 {
 	memset(t, 0, (*t).sizeof), t.entry_size = entry_size;
 }
 
-Entry *mainposition(const Table *t, Symbol key) @nogc nothrow
+Entry *mainPosition(const Table *t, Symbol key)
 {
 	return index(t.hash, (key.id & (t.size - 1))*t.entry_size);
 }
 
-void resettable(Table *t)
+void resetTable(Table *t)
 {
 	t.count = 0;
 	memset(t.hash, 0, t.lastfree = t.size * t.entry_size);
 }
 
-size_t hashsize(Table *t, size_t len) {
+size_t hashSize(Table *t, size_t len) {
 	size_t newsize = AM_MIN_HASHSIZE;
 	const size_t max_size = (AM_MAX_SIZET / 2) / t.entry_size;
 	while (newsize < max_size && newsize < len)
@@ -264,24 +263,24 @@ size_t hashsize(Table *t, size_t len) {
 	return newsize < len ? 0 : newsize;
 }
 
-void freetable(Solver *solver, Table *t)
+void freeTable(Solver *solver, Table *t)
 {
 	size_t size = t.size*t.entry_size;
 	if (size) solver.allocf(solver.ud, t.hash, 0, size);
-	inittable(t, t.entry_size);
+	initTable(t, t.entry_size);
 }
 
-size_t resizetable(Solver *solver, Table *t, size_t len) {
+size_t resizeTable(Solver *solver, Table *t, size_t len) {
 	size_t i, oldsize = t.size * t.entry_size;
 	Table nt = *t;
-	nt.size = hashsize(t, len);
+	nt.size = hashSize(t, len);
 	nt.lastfree = nt.size*nt.entry_size;
 	nt.hash = cast(Entry*)solver.allocf(solver.ud, null, nt.lastfree, 0);
 	memset(nt.hash, 0, nt.size*nt.entry_size);
 	for (i = 0; i < oldsize; i += nt.entry_size) {
 		Entry *e = index(t.hash, i);
 		if (e.key.id != 0) {
-			Entry *ne = newkey(solver, &nt, e.key);
+			Entry *ne = newKey(solver, &nt, e.key);
 			if (t.entry_size > Entry.sizeof)
 				memcpy(ne + 1, e + 1, t.entry_size-Entry.sizeof);
 		}
@@ -290,10 +289,10 @@ size_t resizetable(Solver *solver, Table *t, size_t len) {
 	*t = nt;
 	return t.size;
 }
-Entry *newkey(Solver *solver, Table *t, Symbol key) {
-	if (t.size == 0) resizetable(solver, t, AM_MIN_HASHSIZE);
+Entry *newKey(Solver *solver, Table *t, Symbol key) {
+	if (t.size == 0) resizeTable(solver, t, AM_MIN_HASHSIZE);
 	for (;;) {
-		Entry *mp = mainposition(t, key);
+		Entry *mp = mainPosition(t, key);
 		if (mp.key.id != 0) {
 			Entry *f = null;
 			Entry *othern = void;
@@ -301,9 +300,9 @@ Entry *newkey(Solver *solver, Table *t, Symbol key) {
 				Entry *e = index(t.hash, t.lastfree -= t.entry_size);
 				if (e.key.id == 0 && e.next == 0)  { f = e; break; }
 			}
-			if (!f) { resizetable(solver, t, t.count*2); continue; }
+			if (!f) { resizeTable(solver, t, t.count*2); continue; }
 			assert(f.key.id == 0);
-			othern = mainposition(t, mp.key);
+			othern = mainPosition(t, mp.key);
 			if (othern != mp) {
 				Entry *next;
 				while ((next = index(othern, othern.next)) != mp)
@@ -323,28 +322,28 @@ Entry *newkey(Solver *solver, Table *t, Symbol key) {
 	}
 }
 
-Entry *gettable(const Table *t, Symbol key) @nogc nothrow
+Entry *getTable(const Table *t, Symbol key)
 {
 	Entry *e;
 	if (t.size == 0 || key.id == 0) return null;
-	e = mainposition(t, key);
+	e = mainPosition(t, key);
 	for (; e.key.id != key.id; e = index(e, e.next))
 		if (e.next == 0) return null;
 	return e;
 }
 
-Entry *settable(Solver *solver, Table *t, Symbol key) {
+Entry *setTable(Solver *solver, Table *t, Symbol key) {
 	Entry *e;
 	assert(key.id != 0);
-	if ((e = cast(Entry*)gettable(t, key)) !is null) return e;
-	e = newkey(solver, t, key);
+	if ((e = cast(Entry*)getTable(t, key)) !is null) return e;
+	e = newKey(solver, t, key);
 	if (t.entry_size > Entry.sizeof)
 		memset(e + 1, 0, t.entry_size-Entry.sizeof);
 	++t.count;
 	return e;
 }
 
-int nextentry(const(Table) *t, Entry **pentry) {
+int nextEntry(const(Table) *t, Entry **pentry) {
 	size_t i = *pentry ? offset(*pentry, t.hash) + t.entry_size : 0;
 	size_t size = t.size*t.entry_size;
 	for (; i < size; i += t.entry_size) {
@@ -358,86 +357,94 @@ int nextentry(const(Table) *t, Entry **pentry) {
 
 /* expression (row) */
 
-int isconstant(Row *row)
+int isConstant(Row *row)
 {
 	return row.terms.count == 0;
 }
 
-void freerow(Solver *solver, Row *row)
+void freeRow(Solver *solver, Row *row)
 {
-	freetable(solver, &row.terms);
+	freeTable(solver, &row.terms);
 }
 
-void resetrow(Row *row)
+void resetRow(Row *row)
 {
 	row.constant = 0.0f;
-	resettable(&row.terms);
+	resetTable(&row.terms);
 }
 
-void initrow(Row *row) {
+void initRow(Row *row)
+{
 	// key(row) = Symbol();
 	(cast(Entry*)(row)).key  = Symbol();
 	row.infeasible_next = Symbol();
 	row.constant = 0.0f;
-	inittable(&row.terms, Term.sizeof);
+	initTable(&row.terms, Term.sizeof);
 }
 
-void multiply(Row *row, Float multiplier) {
+void multiply(Row *row, Float multiplier)
+{
 	Term *term = null;
 	row.constant *= multiplier;
-	while (nextentry(&row.terms, cast(Entry**)&term))
+	while (nextEntry(&row.terms, cast(Entry**)&term))
 		term.multiplier *= multiplier;
 }
 
-void addvar(Solver *solver, Row *row, Symbol sym, Float value) {
+void addVar(Solver *solver, Row *row, Symbol sym, Float value)
+{
 	Term *term;
 	if (sym.id == 0) return;
-	if ((term = cast(Term*)gettable(&row.terms, sym)) is null)
-		term = cast(Term*)settable(solver, &row.terms, sym);
-	if (nearzero(term.multiplier += value))
-		delkey(&row.terms, &term.entry);
+	if ((term = cast(Term*)getTable(&row.terms, sym)) is null)
+		term = cast(Term*)setTable(solver, &row.terms, sym);
+	if (nearZero(term.multiplier += value))
+		delKey(&row.terms, &term.entry);
 }
 
-void addrow(Solver *solver, Row *row, const Row *other, Float multiplier) {
+void addRow(Solver *solver, Row *row, const Row *other, Float multiplier)
+{
 	Term *term = null;
 	row.constant += other.constant*multiplier;
-	while (nextentry(&other.terms, cast(Entry**)&term))
-		addvar(solver, row, key(term), term.multiplier*multiplier);
+	while (nextEntry(&other.terms, cast(Entry**)&term))
+		addVar(solver, row, key(term), term.multiplier*multiplier);
 }
 
-void solvefor(Solver *solver, Row *row, Symbol entry, Symbol exit) {
-	Term *term = cast(Term*)gettable(&row.terms, entry);
+void solveFor(Solver *solver, Row *row, Symbol entry, Symbol exit)
+{
+	Term *term = cast(Term*)getTable(&row.terms, entry);
 	Float reciprocal = 1.0f / term.multiplier;
-	assert(entry.id != exit.id && !nearzero(term.multiplier));
-	delkey(&row.terms, &term.entry);
+	assert(entry.id != exit.id && !nearZero(term.multiplier));
+	delKey(&row.terms, &term.entry);
 	multiply(row, -reciprocal);
-	if (exit.id != 0) addvar(solver, row, exit, reciprocal);
+	if (exit.id != 0) addVar(solver, row, exit, reciprocal);
 }
 
-void substitute(Solver *solver, Row *row, Symbol entry, const Row *other) {
-	Term *term = cast(Term*)gettable(&row.terms, entry);
+void substitute(Solver *solver, Row *row, Symbol entry, const Row *other)
+{
+	Term *term = cast(Term*)getTable(&row.terms, entry);
 	if (!term) return;
-	delkey(&row.terms, &term.entry);
-	addrow(solver, row, other, term.multiplier);
+	delKey(&row.terms, &term.entry);
+	addRow(solver, row, other, term.multiplier);
 }
 
 
 /* variables & constraints */
 
-int variableid(Variable *var) { return var ? var.sym.id : -1; }
+int variableId(Variable *var) { return var ? var.sym.id : -1; }
 Float value(Variable *var) { return var ? var.value : 0.0f; }
 void usevariable(Variable *var) { if (var) ++var.refcount; }
 
-Variable *sym2var(Solver *solver, Symbol sym) {
-	VarEntry *ve = cast(VarEntry*)gettable(&solver.vars, sym);
+Variable *sym2var(Solver *solver, Symbol sym)
+{
+	VarEntry *ve = cast(VarEntry*)getTable(&solver.vars, sym);
 	assert(ve !is null);
 	return ve.variable;
 }
 
-Variable* newvariable(Solver *solver) {
+Variable* newVariable(Solver *solver)
+{
 	Variable *var = cast(Variable*)allocMem(solver, &solver.varpool);
-	Symbol sym = newsymbol(solver, AM_EXTERNAL);
-	VarEntry *ve = cast(VarEntry*)settable(solver, &solver.vars, sym);
+	Symbol sym = newSymbol(solver, AM_EXTERNAL);
+	VarEntry *ve = cast(VarEntry*)setTable(solver, &solver.vars, sym);
 	assert(ve.variable is null);
 	memset(var, 0, (*var).sizeof);
 	var.sym      = sym;
@@ -447,90 +454,98 @@ Variable* newvariable(Solver *solver) {
 	return var;
 }
 
-void delvariable(Variable *var) {
+void delVariable(Variable *var)
+{
 	if (var && --var.refcount <= 0) {
 		Solver *solver = var.solver;
-		VarEntry *e = cast(VarEntry*)gettable(&solver.vars, var.sym);
+		VarEntry *e = cast(VarEntry*)getTable(&solver.vars, var.sym);
 		assert(e !is null);
-		delkey(&solver.vars, &e.entry);
+		delKey(&solver.vars, &e.entry);
 		remove(var.constraint);
 		freeMem(&solver.varpool, var);
 	}
 }
 
-Constraint* newconstraint(Solver *solver, Float strength) {
+Constraint* newConstraint(Solver *solver, Float strength)
+{
 	Constraint *cons = cast(Constraint*)allocMem(solver, &solver.conspool);
 	memset(cons, 0, (*cons).sizeof);
 	cons.solver   = solver;
-	cons.strength = nearzero(strength) ? AM_REQUIRED : strength;
-	initrow(&cons.expression);
+	cons.strength = nearZero(strength) ? AM_REQUIRED : strength;
+	initRow(&cons.expression);
 	(cast(Entry*)(cons)).key.id = ++solver.constraint_count;
 	(cast(Entry*)(cons)).key.type = AM_EXTERNAL;
-	(cast(ConsEntry*)settable(solver, &solver.constraints, key(cons))).constraint = cons;
+	(cast(ConsEntry*)setTable(solver, &solver.constraints, key(cons))).constraint = cons;
 	return cons;
 }
 
-void delconstraint(Constraint *cons) {
+void delConstraint(Constraint *cons)
+{
 	Solver *solver = cons ? cons.solver : null;
 	Term *term = null;
 	ConsEntry *ce;
 	if (cons is null) return;
 	remove(cons);
-	ce = cast(ConsEntry*)gettable(&solver.constraints, key(cons));
+	ce = cast(ConsEntry*)getTable(&solver.constraints, key(cons));
 	assert(ce !is null);
-	delkey(&solver.constraints, &ce.entry);
-	while (nextentry(&cons.expression.terms, cast(Entry**)&term))
-		delvariable(sym2var(solver, key(term)));
-	freerow(solver, &cons.expression);
+	delKey(&solver.constraints, &ce.entry);
+	while (nextEntry(&cons.expression.terms, cast(Entry**)&term))
+		delVariable(sym2var(solver, key(term)));
+	freeRow(solver, &cons.expression);
 	freeMem(&solver.conspool, cons);
 }
 
-Constraint *cloneconstraint(Constraint *other, Float strength) {
+Constraint *cloneConstraint(Constraint *other, Float strength)
+{
 	Constraint *cons;
 	if (other is null) return null;
-	cons = newconstraint(other.solver,
-			nearzero(strength) ? other.strength : strength);
-	mergeconstraint(cons, other, 1.0f);
+	cons = newConstraint(other.solver,
+			nearZero(strength) ? other.strength : strength);
+	mergeConstraint(cons, other, 1.0f);
 	cons.relation = other.relation;
 	return cons;
 }
 
-int mergeconstraint(Constraint *cons, Constraint *other, Float multiplier) {
+int mergeConstraint(Constraint *cons, Constraint *other, Float multiplier)
+{
 	Term *term = null;
 	if (cons is null || other is null || cons.marker.id != 0
 			|| cons.solver != other.solver) return AM_FAILED;
 	if (cons.relation == AM_GREATEQUAL) multiplier = -multiplier;
 	cons.expression.constant += other.expression.constant*multiplier;
-	while (nextentry(&other.expression.terms, cast(Entry**)&term)) {
+	while (nextEntry(&other.expression.terms, cast(Entry**)&term)) {
 		usevariable(sym2var(cons.solver, key(term)));
-		addvar(cons.solver, &cons.expression, key(term),
+		addVar(cons.solver, &cons.expression, key(term),
 				term.multiplier*multiplier);
 	}
 	return AM_OK;
 }
 
-void resetconstraint(Constraint *cons) {
+void resetConstraint(Constraint *cons)
+{
 	Term *term = null;
 	if (cons is null) return;
 	remove(cons);
 	cons.relation = 0;
-	while (nextentry(&cons.expression.terms, cast(Entry**)&term))
-		delvariable(sym2var(cons.solver, key(term)));
-	resetrow(&cons.expression);
+	while (nextEntry(&cons.expression.terms, cast(Entry**)&term))
+		delVariable(sym2var(cons.solver, key(term)));
+	resetRow(&cons.expression);
 }
 
-int addterm(Constraint *cons, Variable *var, Float multiplier = 1.0) {
+int addTerm(Constraint *cons, Variable *var, Float multiplier = 1.0)
+{
 	if (cons is null || var is null || cons.marker.id != 0 ||
 			cons.solver != var.solver) return AM_FAILED;
 	assert(var.sym.id != 0);
 	assert(var.solver == cons.solver);
 	if (cons.relation == AM_GREATEQUAL) multiplier = -multiplier;
-	addvar(cons.solver, &cons.expression, var.sym, multiplier);
+	addVar(cons.solver, &cons.expression, var.sym, multiplier);
 	usevariable(var);
 	return AM_OK;
 }
 
-int addconstant(Constraint *cons, Float constant) {
+int addConstant(Constraint *cons, Float constant)
+{
 	if (cons is null || cons.marker.id != 0) return AM_FAILED;
 	if (cons.relation == AM_GREATEQUAL)
 		cons.expression.constant -= constant;
@@ -539,7 +554,8 @@ int addconstant(Constraint *cons, Float constant) {
 	return AM_OK;
 }
 
-int setrelation(Constraint *cons, int relation) {
+int setRelation(Constraint *cons, int relation)
+{
 	assert(relation >= AM_LESSEQUAL && relation <= AM_GREATEQUAL);
 	if (cons is null || cons.marker.id != 0 || cons.relation != 0)
 		return AM_FAILED;
@@ -551,17 +567,17 @@ int setrelation(Constraint *cons, int relation) {
 
 // /* Cassowary algorithm */
 
-int hasedit(Variable *var)
+int hasEdit(Variable *var)
 {
 	return var !is null && var.constraint !is null;
 }
 
-int hasconstraint(Constraint *cons)
+int hasConstraint(Constraint *cons)
 {
 	return cons !is null && cons.marker.id != 0;
 }
 
-void autoupdate(Solver *solver, int auto_update)
+void autoUpdate(Solver *solver, int auto_update)
 {
 	solver.auto_update = auto_update;
 }
@@ -573,47 +589,47 @@ void infeasible(Solver *solver, Row *row) {
 	solver.infeasible_rows = key(row);
 }
 
-void markdirty(Solver *solver, Variable *var) {
+void markDirty(Solver *solver, Variable *var) {
 	if (var.dirty_next.type == AM_DUMMY) return;
 	var.dirty_next.id = solver.dirty_vars.id;
 	var.dirty_next.type = AM_DUMMY;
 	solver.dirty_vars = var.sym;
 }
 
-void substitute_rows(Solver *solver, Symbol var, Row *expr) {
+void substituteRows(Solver *solver, Symbol var, Row *expr) {
 	Row *row = null;
-	while (nextentry(&solver.rows, cast(Entry**)&row)) {
+	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 		substitute(solver, row, var, expr);
 		if (isexternal(key(row)))
-			markdirty(solver, sym2var(solver, key(row)));
+			markDirty(solver, sym2var(solver, key(row)));
 		else if (row.constant < 0.0f)
 			infeasible(solver, row);
 	}
 	substitute(solver, &solver.objective, var, expr);
 }
 
-int getrow(Solver *solver, Symbol sym, Row *dst) {
-	Row *row = cast(Row*)gettable(&solver.rows, sym);
+int getRow(Solver *solver, Symbol sym, Row *dst) {
+	Row *row = cast(Row*)getTable(&solver.rows, sym);
 	(cast(Entry*)(dst)).key = Symbol();
 	if (row is null) return AM_FAILED;
-	delkey(&solver.rows, &row.entry);
+	delKey(&solver.rows, &row.entry);
 	dst.constant   = row.constant;
 	dst.terms      = row.terms;
 	return AM_OK;
 }
 
-int putrow(Solver *solver, Symbol sym, /*const*/ Row *src) {
-	Row *row = cast(Row*)settable(solver, &solver.rows, sym);
+int putRow(Solver *solver, Symbol sym, /*const*/ Row *src) {
+	Row *row = cast(Row*)setTable(solver, &solver.rows, sym);
 	row.constant = src.constant;
 	row.terms    = src.terms;
 	return AM_OK;
 }
 
-void mergerow(Solver *solver, Row *row, Symbol var, Float multiplier) @nogc nothrow
+void mergeRow(Solver *solver, Row *row, Symbol var, Float multiplier)
 {
-	Row *oldrow = cast(Row*)gettable(&solver.rows, var);
-	if (oldrow) addrow(solver, row, oldrow, multiplier);
-	else addvar(solver, row, var, multiplier);
+	Row *oldrow = cast(Row*)getTable(&solver.rows, var);
+	if (oldrow) addRow(solver, row, oldrow, multiplier);
+	else addVar(solver, row, var, multiplier);
 }
 
 int optimize(Solver *solver, Row *objective) {
@@ -625,14 +641,14 @@ int optimize(Solver *solver, Row *objective) {
 		Term *term = null;
 
 		assert(solver.infeasible_rows.id == 0);
-		while (nextentry(&objective.terms, cast(Entry**)&term)) {
+		while (nextEntry(&objective.terms, cast(Entry**)&term)) {
 			if (!isdummy(key(term)) && term.multiplier < 0.0f)
 			{ enter = key(term); break; }
 		}
 		if (enter.id == 0) return AM_OK;
 
-		while (nextentry(&solver.rows, cast(Entry**)&row)) {
-			term = cast(Term*)gettable(&row.terms, enter);
+		while (nextEntry(&solver.rows, cast(Entry**)&row)) {
+			term = cast(Term*)getTable(&row.terms, enter);
 			if (term is null || !ispivotable(key(row))
 					|| term.multiplier > 0.0f) continue;
 			r = -row.constant / term.multiplier;
@@ -643,89 +659,89 @@ int optimize(Solver *solver, Row *objective) {
 		assert(exit.id != 0);
 		if (exit.id == 0) return AM_FAILED;
 
-		getrow(solver, exit, &tmp);
-		solvefor(solver, &tmp, enter, exit);
-		substitute_rows(solver, enter, &tmp);
+		getRow(solver, exit, &tmp);
+		solveFor(solver, &tmp, enter, exit);
+		substituteRows(solver, enter, &tmp);
 		if (objective != &solver.objective)
 			substitute(solver, objective, enter, &tmp);
-		putrow(solver, enter, &tmp);
+		putRow(solver, enter, &tmp);
 	}
 }
 
-Row makerow(Solver *solver, Constraint *cons) {
+Row makeRow(Solver *solver, Constraint *cons) {
 	Term *term = null;
 	Row row;
-	initrow(&row);
+	initRow(&row);
 	row.constant = cons.expression.constant;
-	while (nextentry(&cons.expression.terms, cast(Entry**)&term)) {
-		markdirty(solver, sym2var(solver, key(term)));
-		mergerow(solver, &row, key(term), term.multiplier);
+	while (nextEntry(&cons.expression.terms, cast(Entry**)&term)) {
+		markDirty(solver, sym2var(solver, key(term)));
+		mergeRow(solver, &row, key(term), term.multiplier);
 	}
 	if (cons.relation != AM_EQUAL) {
-		initsymbol(solver, &cons.marker, AM_SLACK);
-		addvar(solver, &row, cons.marker, -1.0f);
+		initSymbol(solver, &cons.marker, AM_SLACK);
+		addVar(solver, &row, cons.marker, -1.0f);
 		if (cons.strength < AM_REQUIRED) {
-			initsymbol(solver, &cons.other, AM_ERROR);
-			addvar(solver, &row, cons.other, 1.0f);
-			addvar(solver, &solver.objective, cons.other, cons.strength);
+			initSymbol(solver, &cons.other, AM_ERROR);
+			addVar(solver, &row, cons.other, 1.0f);
+			addVar(solver, &solver.objective, cons.other, cons.strength);
 		}
 	}
 	else if (cons.strength >= AM_REQUIRED) {
-		initsymbol(solver, &cons.marker, AM_DUMMY);
-		addvar(solver, &row, cons.marker, 1.0f);
+		initSymbol(solver, &cons.marker, AM_DUMMY);
+		addVar(solver, &row, cons.marker, 1.0f);
 	}
 	else {
-		initsymbol(solver, &cons.marker, AM_ERROR);
-		initsymbol(solver, &cons.other,  AM_ERROR);
-		addvar(solver, &row, cons.marker, -1.0f);
-		addvar(solver, &row, cons.other,   1.0f);
-		addvar(solver, &solver.objective, cons.marker, cons.strength);
-		addvar(solver, &solver.objective, cons.other,  cons.strength);
+		initSymbol(solver, &cons.marker, AM_ERROR);
+		initSymbol(solver, &cons.other,  AM_ERROR);
+		addVar(solver, &row, cons.marker, -1.0f);
+		addVar(solver, &row, cons.other,   1.0f);
+		addVar(solver, &solver.objective, cons.marker, cons.strength);
+		addVar(solver, &solver.objective, cons.other,  cons.strength);
 	}
 	if (row.constant < 0.0f) multiply(&row, -1.0f);
 	return row;
 }
 
-void remove_errors(Solver *solver, Constraint *cons) @nogc nothrow
+void removeErrors(Solver *solver, Constraint *cons)
 {
 	if (iserror(cons.marker))
-		mergerow(solver, &solver.objective, cons.marker, -cons.strength);
+		mergeRow(solver, &solver.objective, cons.marker, -cons.strength);
 	if (iserror(cons.other))
-		mergerow(solver, &solver.objective, cons.other, -cons.strength);
-	if (isconstant(&solver.objective))
+		mergeRow(solver, &solver.objective, cons.other, -cons.strength);
+	if (isConstant(&solver.objective))
 		solver.objective.constant = 0.0f;
 	cons.marker = cons.other = Symbol();
 }
 
 int add_with_artificial(Solver *solver, Row *row, Constraint *cons) {
-	Symbol a = newsymbol(solver, AM_SLACK);
+	Symbol a = newSymbol(solver, AM_SLACK);
 	Term *term = null;
 	Row tmp;
 	int ret;
 	--solver.symbol_count; /* artificial variable will be removed */
-	initrow(&tmp);
-	addrow(solver, &tmp, row, 1.0f);
-	putrow(solver, a, row);
-	initrow(row), row = null; /* row is useless */
+	initRow(&tmp);
+	addRow(solver, &tmp, row, 1.0f);
+	putRow(solver, a, row);
+	initRow(row), row = null; /* row is useless */
 	optimize(solver, &tmp);
-	ret = nearzero(tmp.constant) ? AM_OK : AM_UNBOUND;
-	freerow(solver, &tmp);
-	if (getrow(solver, a, &tmp) == AM_OK) {
+	ret = nearZero(tmp.constant) ? AM_OK : AM_UNBOUND;
+	freeRow(solver, &tmp);
+	if (getRow(solver, a, &tmp) == AM_OK) {
 		Symbol entry = Symbol();
-		if (isconstant(&tmp)) { freerow(solver, &tmp); return ret; }
-		while (nextentry(&tmp.terms, cast(Entry**)&term))
+		if (isConstant(&tmp)) { freeRow(solver, &tmp); return ret; }
+		while (nextEntry(&tmp.terms, cast(Entry**)&term))
 			if (ispivotable(key(term))) { entry = key(term); break; }
-		if (entry.id == 0) { freerow(solver, &tmp); return AM_UNBOUND; }
-		solvefor(solver, &tmp, entry, a);
-		substitute_rows(solver, entry, &tmp);
-		putrow(solver, entry, &tmp);
+		if (entry.id == 0) { freeRow(solver, &tmp); return AM_UNBOUND; }
+		solveFor(solver, &tmp, entry, a);
+		substituteRows(solver, entry, &tmp);
+		putRow(solver, entry, &tmp);
 	}
-	while (nextentry(&solver.rows, cast(Entry**)&row)) {
-		term = cast(Term*)gettable(&row.terms, a);
-		if (term) delkey(&row.terms, &term.entry);
+	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
+		term = cast(Term*)getTable(&row.terms, a);
+		if (term) delKey(&row.terms, &term.entry);
 	}
-	term = cast(Term*)gettable(&solver.objective.terms, a);
-	if (term) delkey(&solver.objective.terms, &term.entry);
+	term = cast(Term*)getTable(&solver.objective.terms, a);
+	if (term) delKey(&solver.objective.terms, &term.entry);
 	if (ret != AM_OK) remove(cons);
 	return ret;
 }
@@ -733,33 +749,33 @@ int add_with_artificial(Solver *solver, Row *row, Constraint *cons) {
 int try_addrow(Solver *solver, Row *row, Constraint *cons) {
 	Symbol subject = Symbol();
 	Term *term = null;
-	while (nextentry(&row.terms, cast(Entry**)&term))
+	while (nextEntry(&row.terms, cast(Entry**)&term))
 		if (isexternal(key(term))) { subject = key(term); break; }
 	if (subject.id == 0 && ispivotable(cons.marker)) {
-		Term *mterm = cast(Term*)gettable(&row.terms, cons.marker);
+		Term *mterm = cast(Term*)getTable(&row.terms, cons.marker);
 		if (mterm.multiplier < 0.0f) subject = cons.marker;
 	}
 	if (subject.id == 0 && ispivotable(cons.other)) {
-		Term *mterm = cast(Term*)gettable(&row.terms, cons.other);
+		Term *mterm = cast(Term*)getTable(&row.terms, cons.other);
 		if (mterm.multiplier < 0.0f) subject = cons.other;
 	}
 	if (subject.id == 0) {
-		while (nextentry(&row.terms, cast(Entry**)&term))
+		while (nextEntry(&row.terms, cast(Entry**)&term))
 			if (!isdummy(key(term))) break;
 		if (term is null) {
-			if (nearzero(row.constant))
+			if (nearZero(row.constant))
 				subject = cons.marker;
 			else {
-				freerow(solver, row);
+				freeRow(solver, row);
 				return AM_UNSATISFIED;
 			}
 		}
 	}
 	if (subject.id == 0)
 		return add_with_artificial(solver, row, cons);
-	solvefor(solver, row, subject, Symbol());
-	substitute_rows(solver, subject, row);
-	putrow(solver, subject, row);
+	solveFor(solver, row, subject, Symbol());
+	substituteRows(solver, subject, row);
+	putRow(solver, subject, row);
 	return AM_OK;
 }
 
@@ -767,8 +783,8 @@ Symbol get_leaving_row(Solver *solver, Symbol marker) {
 	Symbol first = Symbol(), second = Symbol(), third = Symbol();
 	Float r1 = Float.max, r2 = Float.max;
 	Row *row = null;
-	while (nextentry(&solver.rows, cast(Entry**)&row)) {
-		Term *term = cast(Term*)gettable(&row.terms, marker);
+	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
+		Term *term = cast(Term*)getTable(&row.terms, marker);
 		if (term is null) continue;
 		if (isexternal(key(row))) third = key(row);
 		else if (term.multiplier < 0.0f) {
@@ -785,16 +801,16 @@ Symbol get_leaving_row(Solver *solver, Symbol marker) {
 
 void delta_edit_constant(Solver *solver, Float delta, Constraint *cons) {
 	Row *row;
-	if ((row = cast(Row*)gettable(&solver.rows, cons.marker)) !is null)
+	if ((row = cast(Row*)getTable(&solver.rows, cons.marker)) !is null)
 	{ if ((row.constant -= delta) < 0.0f) infeasible(solver, row); return; }
-	if ((row = cast(Row*)gettable(&solver.rows, cons.other)) !is null)
+	if ((row = cast(Row*)getTable(&solver.rows, cons.other)) !is null)
 	{ if ((row.constant += delta) < 0.0f) infeasible(solver, row); return; }
-	while (nextentry(&solver.rows, cast(Entry**)&row)) {
-		Term *term = cast(Term*)gettable(&row.terms, cons.marker);
+	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
+		Term *term = cast(Term*)getTable(&row.terms, cons.marker);
 		if (term is null) continue;
 		row.constant += term.multiplier*delta;
 		if (isexternal(key(row)))
-			markdirty(solver, sym2var(solver, key(row)));
+			markDirty(solver, sym2var(solver, key(row)));
 		else if (row.constant < 0.0f)
 			infeasible(solver, row);
 	}
@@ -804,7 +820,7 @@ void dual_optimize(Solver *solver) {
 	while (solver.infeasible_rows.id != 0) {
 		Row tmp = void;
 		Row *row =
-			cast(Row*)gettable(&solver.rows, solver.infeasible_rows);
+			cast(Row*)getTable(&solver.rows, solver.infeasible_rows);
 		Symbol enter = Symbol(), exit = key(row), curr;
 		Term *objterm = void;
 		Term *term = null;
@@ -812,18 +828,18 @@ void dual_optimize(Solver *solver) {
 		solver.infeasible_rows = row.infeasible_next;
 		row.infeasible_next = Symbol();
 		if (row.constant >= 0.0f) continue;
-		while (nextentry(&row.terms, cast(Entry**)&term)) {
+		while (nextEntry(&row.terms, cast(Entry**)&term)) {
 			if (isdummy(curr = key(term)) || term.multiplier <= 0.0f)
 				continue;
-			objterm = cast(Term*)gettable(&solver.objective.terms, curr);
+			objterm = cast(Term*)getTable(&solver.objective.terms, curr);
 			r = objterm ? objterm.multiplier / term.multiplier : 0.0f;
 			if (min_ratio > r) min_ratio = r, enter = curr;
 		}
 		assert(enter.id != 0);
-		getrow(solver, exit, &tmp);
-		solvefor(solver, &tmp, enter, exit);
-		substitute_rows(solver, enter, &tmp);
-		putrow(solver, enter, &tmp);
+		getRow(solver, exit, &tmp);
+		solveFor(solver, &tmp, enter, exit);
+		substituteRows(solver, enter, &tmp);
+		putRow(solver, enter, &tmp);
 	}
 }
 
@@ -850,10 +866,10 @@ Solver *newsolver(Allocf allocf, void *ud) {
 	memset(solver, 0, (*solver).sizeof);
 	solver.allocf = allocf;
 	solver.ud     = ud;
-	initrow(&solver.objective);
-	inittable(&solver.vars, VarEntry.sizeof);
-	inittable(&solver.constraints, ConsEntry.sizeof);
-	inittable(&solver.rows, Row.sizeof);
+	initRow(&solver.objective);
+	initTable(&solver.vars, VarEntry.sizeof);
+	initTable(&solver.constraints, ConsEntry.sizeof);
+	initTable(&solver.rows, Row.sizeof);
 	solver.varpool  = MemPool(Variable.sizeof);
 	solver.conspool = MemPool(Constraint.sizeof);
 	return solver;
@@ -862,47 +878,47 @@ Solver *newsolver(Allocf allocf, void *ud) {
 void delsolver(Solver *solver) {
 	ConsEntry *ce = null;
 	Row *row = null;
-	while (nextentry(&solver.constraints, cast(Entry**)&ce))
-		freerow(solver, &ce.constraint.expression);
-	while (nextentry(&solver.rows, cast(Entry**)&row))
-		freerow(solver, row);
-	freerow(solver, &solver.objective);
-	freetable(solver, &solver.vars);
-	freetable(solver, &solver.constraints);
-	freetable(solver, &solver.rows);
-	freepool(solver, &solver.varpool);
-	freepool(solver, &solver.conspool);
+	while (nextEntry(&solver.constraints, cast(Entry**)&ce))
+		freeRow(solver, &ce.constraint.expression);
+	while (nextEntry(&solver.rows, cast(Entry**)&row))
+		freeRow(solver, row);
+	freeRow(solver, &solver.objective);
+	freeTable(solver, &solver.vars);
+	freeTable(solver, &solver.constraints);
+	freeTable(solver, &solver.rows);
+	freePool(solver, &solver.varpool);
+	freePool(solver, &solver.conspool);
 	solver.allocf(solver.ud, solver, 0, (*solver).sizeof);
 }
 
 void resetsolver(Solver *solver, int clear_constraints) {
 	Entry *entry = null;
 	if (!solver.auto_update) updatevars(solver);
-	while (nextentry(&solver.vars, &entry)) {
+	while (nextEntry(&solver.vars, &entry)) {
 		Constraint **cons = &(cast(VarEntry*)entry).variable.constraint;
 		remove(*cons);
 		*cons = null;
 	}
-	assert(nearzero(solver.objective.constant));
+	assert(nearZero(solver.objective.constant));
 	assert(solver.infeasible_rows.id == 0);
 	assert(solver.dirty_vars.id == 0);
 	if (!clear_constraints) return;
-	resetrow(&solver.objective);
-	while (nextentry(&solver.constraints, &entry)) {
+	resetRow(&solver.objective);
+	while (nextEntry(&solver.constraints, &entry)) {
 		Constraint *cons = (cast(ConsEntry*)entry).constraint;
 		if (cons.marker.id == 0) continue;
 		cons.marker = cons.other = Symbol();
 	}
-	while (nextentry(&solver.rows, &entry)) {
-		delkey(&solver.rows, entry);
-		freerow(solver, cast(Row*)entry);
+	while (nextEntry(&solver.rows, &entry)) {
+		delKey(&solver.rows, entry);
+		freeRow(solver, cast(Row*)entry);
 	}
 }
 
 void updatevars(Solver *solver) {
 	while (solver.dirty_vars.id != 0) {
 		Variable *var = sym2var(solver, solver.dirty_vars);
-		Row *row = cast(Row*)gettable(&solver.rows, var.sym);
+		Row *row = cast(Row*)getTable(&solver.rows, var.sym);
 		solver.dirty_vars = var.dirty_next;
 		var.dirty_next = Symbol();
 		var.value = row ? row.constant : 0.0f;
@@ -914,9 +930,9 @@ int add(Constraint *cons) {
 	int ret, oldsym = solver ? solver.symbol_count : 0;
 	Row row;
 	if (solver is null || cons.marker.id != 0) return AM_FAILED;
-	row = makerow(solver, cons);
+	row = makeRow(solver, cons);
 	if ((ret = try_addrow(solver, &row, cons)) != AM_OK) {
-		remove_errors(solver, cons);
+		removeErrors(solver, cons);
 		solver.symbol_count = oldsym;
 	}
 	else {
@@ -926,22 +942,22 @@ int add(Constraint *cons) {
 	return ret;
 }
 
-void remove(Constraint *cons) @nogc nothrow
+void remove(Constraint *cons)
 {
 	Solver *solver;
 	Symbol marker;
 	Row tmp;
 	if (cons is null || cons.marker.id == 0) return;
 	solver = cons.solver, marker = cons.marker;
-	remove_errors(solver, cons);
-	if (getrow(solver, marker, &tmp) != AM_OK) {
+	removeErrors(solver, cons);
+	if (getRow(solver, marker, &tmp) != AM_OK) {
 		Symbol exit = get_leaving_row(solver, marker);
 		assert(exit.id != 0);
-		getrow(solver, exit, &tmp);
-		solvefor(solver, &tmp, marker, exit);
-		substitute_rows(solver, marker, &tmp);
+		getRow(solver, exit, &tmp);
+		solveFor(solver, &tmp, marker, exit);
+		substituteRows(solver, marker, &tmp);
 	}
-	freerow(solver, &tmp);
+	freeRow(solver, &tmp);
 	optimize(solver, &solver.objective);
 	if (solver.auto_update) updatevars(solver);
 }
@@ -949,15 +965,15 @@ void remove(Constraint *cons) @nogc nothrow
 int setstrength(Constraint *cons, Float strength)
 {
 	if (cons is null) return AM_FAILED;
-	strength = nearzero(strength) ? AM_REQUIRED : strength;
+	strength = nearZero(strength) ? AM_REQUIRED : strength;
 	if (cons.strength == strength) return AM_OK;
 	if (cons.strength >= AM_REQUIRED || strength >= AM_REQUIRED)
 	{ remove(cons), cons.strength = strength; return add(cons); }
 	if (cons.marker.id != 0) {
 		Solver *solver = cons.solver;
 		Float diff = strength - cons.strength;
-		mergerow(solver, &solver.objective, cons.marker, diff);
-		mergerow(solver, &solver.objective, cons.other,  diff);
+		mergeRow(solver, &solver.objective, cons.marker, diff);
+		mergeRow(solver, &solver.objective, cons.other,  diff);
 		optimize(solver, &solver.objective);
 		if (solver.auto_update) updatevars(solver);
 	}
@@ -971,10 +987,10 @@ int addedit(Variable *var, Float strength) {
 	if (var is null || var.constraint !is null) return AM_FAILED;
 	assert(var.sym.id != 0);
 	if (strength > AM_STRONG) strength = AM_STRONG;
-	cons = newconstraint(solver, strength);
-	setrelation(cons, AM_EQUAL);
-	addterm(cons, var, 1.0f); /* var must have positive signture */
-	addconstant(cons, -var.value);
+	cons = newConstraint(solver, strength);
+	setRelation(cons, AM_EQUAL);
+	addTerm(cons, var, 1.0f); /* var must have positive signture */
+	addConstant(cons, -var.value);
 	if (add(cons) != AM_OK) assert(0);
 	var.constraint = cons;
 	var.edit_value = var.value;
@@ -983,7 +999,7 @@ int addedit(Variable *var, Float strength) {
 
 void deledit(Variable *var) {
 	if (var is null || var.constraint is null) return;
-	delconstraint(var.constraint);
+	delConstraint(var.constraint);
 	var.constraint = null;
 	var.edit_value = 0.0f;
 }
