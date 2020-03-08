@@ -56,7 +56,8 @@ struct Symbol
 	import mir.bitmanip : bitfields;
 	mixin(bitfields!(
 		uint, "id",    30,
-		uint, "type",   2,));
+		uint, "type",   2,
+	));
 	debug string label;
 }
 
@@ -289,7 +290,9 @@ size_t resizeTable(Solver *solver, Table *t, size_t len) {
 	*t = nt;
 	return t.size;
 }
-Entry *newKey(Solver *solver, Table *t, Symbol key) {
+
+Entry *newKey(Solver *solver, Table *t, Symbol key)
+{
 	if (t.size == 0) resizeTable(solver, t, AM_MIN_HASHSIZE);
 	for (;;) {
 		Entry *mp = mainPosition(t, key);
@@ -713,7 +716,8 @@ void removeErrors(Solver *solver, Constraint *cons)
 	cons.marker = cons.other = Symbol();
 }
 
-int add_with_artificial(Solver *solver, Row *row, Constraint *cons) {
+int addWithArtificial(Solver *solver, Row *row, Constraint *cons)
+{
 	Symbol a = newSymbol(solver, AM_SLACK);
 	Term *term = null;
 	Row tmp;
@@ -746,7 +750,8 @@ int add_with_artificial(Solver *solver, Row *row, Constraint *cons) {
 	return ret;
 }
 
-int try_addrow(Solver *solver, Row *row, Constraint *cons) {
+int tryAddRow(Solver *solver, Row *row, Constraint *cons)
+{
 	Symbol subject = Symbol();
 	Term *term = null;
 	while (nextEntry(&row.terms, cast(Entry**)&term))
@@ -772,14 +777,15 @@ int try_addrow(Solver *solver, Row *row, Constraint *cons) {
 		}
 	}
 	if (subject.id == 0)
-		return add_with_artificial(solver, row, cons);
+		return addWithArtificial(solver, row, cons);
 	solveFor(solver, row, subject, Symbol());
 	substituteRows(solver, subject, row);
 	putRow(solver, subject, row);
 	return AM_OK;
 }
 
-Symbol get_leaving_row(Solver *solver, Symbol marker) {
+Symbol getLeavingRow(Solver *solver, Symbol marker)
+{
 	Symbol first = Symbol(), second = Symbol(), third = Symbol();
 	Float r1 = Float.max, r2 = Float.max;
 	Row *row = null;
@@ -799,7 +805,8 @@ Symbol get_leaving_row(Solver *solver, Symbol marker) {
 	return first.id ? first : second.id ? second : third;
 }
 
-void delta_edit_constant(Solver *solver, Float delta, Constraint *cons) {
+void deltaEditConstant(Solver *solver, Float delta, Constraint *cons)
+{
 	Row *row;
 	if ((row = cast(Row*)getTable(&solver.rows, cons.marker)) !is null)
 	{ if ((row.constant -= delta) < 0.0f) infeasible(solver, row); return; }
@@ -816,7 +823,8 @@ void delta_edit_constant(Solver *solver, Float delta, Constraint *cons) {
 	}
 }
 
-void dual_optimize(Solver *solver) {
+void dualOptimize(Solver *solver)
+{
 	while (solver.infeasible_rows.id != 0) {
 		Row tmp = void;
 		Row *row =
@@ -843,7 +851,8 @@ void dual_optimize(Solver *solver) {
 	}
 }
 
-void *default_allocf(void *ud, void *ptr, size_t nsize, size_t osize) {
+void *defaultAllocFunc(void *ud, void *ptr, size_t nsize, size_t osize)
+{
 	import core.stdc.stdlib : free, abort, realloc;
 	void *newptr;
 	cast(void)ud, cast(void)osize;
@@ -858,9 +867,10 @@ void *default_allocf(void *ud, void *ptr, size_t nsize, size_t osize) {
 	return newptr;
 }
 
-Solver *newsolver(Allocf allocf, void *ud) {
+Solver *newSolver(Allocf allocf, void *ud)
+{
 	Solver *solver;
-	if (allocf is null) allocf = &default_allocf;
+	if (allocf is null) allocf = &defaultAllocFunc;
 	if ((solver = cast(Solver*)allocf(ud, null, Solver.sizeof, 0)) is null)
 		return null;
 	memset(solver, 0, (*solver).sizeof);
@@ -875,7 +885,8 @@ Solver *newsolver(Allocf allocf, void *ud) {
 	return solver;
 }
 
-void delsolver(Solver *solver) {
+void delSolver(Solver *solver)
+{
 	ConsEntry *ce = null;
 	Row *row = null;
 	while (nextEntry(&solver.constraints, cast(Entry**)&ce))
@@ -891,9 +902,10 @@ void delsolver(Solver *solver) {
 	solver.allocf(solver.ud, solver, 0, (*solver).sizeof);
 }
 
-void resetsolver(Solver *solver, int clear_constraints) {
+void resetSolver(Solver *solver, int clear_constraints)
+{
 	Entry *entry = null;
-	if (!solver.auto_update) updatevars(solver);
+	if (!solver.auto_update) updateVars(solver);
 	while (nextEntry(&solver.vars, &entry)) {
 		Constraint **cons = &(cast(VarEntry*)entry).variable.constraint;
 		remove(*cons);
@@ -915,7 +927,8 @@ void resetsolver(Solver *solver, int clear_constraints) {
 	}
 }
 
-void updatevars(Solver *solver) {
+void updateVars(Solver *solver)
+{
 	while (solver.dirty_vars.id != 0) {
 		Variable *var = sym2var(solver, solver.dirty_vars);
 		Row *row = cast(Row*)getTable(&solver.rows, var.sym);
@@ -925,19 +938,20 @@ void updatevars(Solver *solver) {
 	}
 }
 
-int add(Constraint *cons) {
+int add(Constraint *cons)
+{
 	Solver *solver = cons ? cons.solver : null;
 	int ret, oldsym = solver ? solver.symbol_count : 0;
 	Row row;
 	if (solver is null || cons.marker.id != 0) return AM_FAILED;
 	row = makeRow(solver, cons);
-	if ((ret = try_addrow(solver, &row, cons)) != AM_OK) {
+	if ((ret = tryAddRow(solver, &row, cons)) != AM_OK) {
 		removeErrors(solver, cons);
 		solver.symbol_count = oldsym;
 	}
 	else {
 		optimize(solver, &solver.objective);
-		if (solver.auto_update) updatevars(solver);
+		if (solver.auto_update) updateVars(solver);
 	}
 	return ret;
 }
@@ -951,7 +965,7 @@ void remove(Constraint *cons)
 	solver = cons.solver, marker = cons.marker;
 	removeErrors(solver, cons);
 	if (getRow(solver, marker, &tmp) != AM_OK) {
-		Symbol exit = get_leaving_row(solver, marker);
+		Symbol exit = getLeavingRow(solver, marker);
 		assert(exit.id != 0);
 		getRow(solver, exit, &tmp);
 		solveFor(solver, &tmp, marker, exit);
@@ -959,10 +973,10 @@ void remove(Constraint *cons)
 	}
 	freeRow(solver, &tmp);
 	optimize(solver, &solver.objective);
-	if (solver.auto_update) updatevars(solver);
+	if (solver.auto_update) updateVars(solver);
 }
 
-int setstrength(Constraint *cons, Float strength)
+int setStrength(Constraint *cons, Float strength)
 {
 	if (cons is null) return AM_FAILED;
 	strength = nearZero(strength) ? AM_REQUIRED : strength;
@@ -975,13 +989,14 @@ int setstrength(Constraint *cons, Float strength)
 		mergeRow(solver, &solver.objective, cons.marker, diff);
 		mergeRow(solver, &solver.objective, cons.other,  diff);
 		optimize(solver, &solver.objective);
-		if (solver.auto_update) updatevars(solver);
+		if (solver.auto_update) updateVars(solver);
 	}
 	cons.strength = strength;
 	return AM_OK;
 }
 
-int addedit(Variable *var, Float strength) {
+int addEdit(Variable *var, Float strength)
+{
 	Solver *solver = var ? var.solver : null;
 	Constraint *cons;
 	if (var is null || var.constraint !is null) return AM_FAILED;
@@ -997,34 +1012,26 @@ int addedit(Variable *var, Float strength) {
 	return AM_OK;
 }
 
-void deledit(Variable *var) {
+void delEdit(Variable *var)
+{
 	if (var is null || var.constraint is null) return;
 	delConstraint(var.constraint);
 	var.constraint = null;
 	var.edit_value = 0.0f;
 }
 
-void suggest(Variable *var, Float value) {
+void suggest(Variable *var, Float value)
+{
 	Solver *solver = var ? var.solver : null;
 	Float delta;
 	if (var is null) return;
 	if (var.constraint is null) {
-		addedit(var, AM_MEDIUM);
+		addEdit(var, AM_MEDIUM);
 		assert(var.constraint !is null);
 	}
 	delta = value - var.edit_value;
 	var.edit_value = value;
-	delta_edit_constant(solver, delta, var.constraint);
-	dual_optimize(solver);
-	if (solver.auto_update) updatevars(solver);
+	deltaEditConstant(solver, delta, var.constraint);
+	dualOptimize(solver);
+	if (solver.auto_update) updateVars(solver);
 }
-
-// AM_NS_END
-
-
-// #endif /* AM_IMPLEMENTATION */
-
-// /* cc: flags+='-shared -O2 -DAM_IMPLEMENTATION -xc'
-//    unixcc: output='amoeba.so'
-//    win32cc: output='amoeba.dll' */
-

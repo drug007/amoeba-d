@@ -106,14 +106,14 @@ void test_all() {
 	Constraint* c1, c2, c3, c4, c5, c6;
 	printf("\n\n==========\ntest all\n");
 
-	solver = newsolver(&null_allocf, null);
+	solver = newSolver(&null_allocf, null);
 	assert(solver is null);
 
-	solver = newsolver(null, null);
+	solver = newSolver(null, null);
 	assert(solver !is null);
-	delsolver(solver);
+	delSolver(solver);
 
-	solver = newsolver(&debug_allocf, null);
+	solver = newSolver(&debug_allocf, null);
 	xl = newVariable(solver);
 	xm = newVariable(solver);
 	xr = newVariable(solver);
@@ -141,8 +141,8 @@ void test_all() {
 	dumpsolver(solver);
 
 	assert(setRelation(c1, AM_GREATEQUAL) == AM_FAILED);
-	assert(setstrength(c1, AM_REQUIRED-10) == AM_OK);
-	assert(setstrength(c1, AM_REQUIRED) == AM_OK);
+	assert(setStrength(c1, AM_REQUIRED-10) == AM_OK);
+	assert(setStrength(c1, AM_REQUIRED) == AM_OK);
 
 	assert(hasConstraint(c1));
 	assert(!hasEdit(xl));
@@ -154,7 +154,7 @@ void test_all() {
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	resetsolver(solver, 1);
+	resetSolver(solver, 1);
 	delConstraint(c1);
 	delConstraint(c2);
 	dumpsolver(solver);
@@ -229,8 +229,8 @@ void test_all() {
 	ret |= add(c1);
 	assert(ret == AM_OK);
 
-	resetsolver(solver, 0);
-	resetsolver(solver, 1);
+	resetSolver(solver, 0);
+	resetSolver(solver, 1);
 	printf("after reset\n");
 	dumpsolver(solver);
 	ret |= add(c1);
@@ -241,15 +241,15 @@ void test_all() {
 
 	printf("after initialize\n");
 	dumpsolver(solver);
-	updatevars(solver);
+	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
 			value(xl),
 			value(xm),
 			value(xr));
 
-	addedit(xm, AM_MEDIUM);
+	addEdit(xm, AM_MEDIUM);
 	dumpsolver(solver);
-	updatevars(solver);
+	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
 			value(xl),
 			value(xm),
@@ -260,7 +260,7 @@ void test_all() {
 	printf("suggest to 0.0\n");
 	suggest(xm, 0.0);
 	dumpsolver(solver);
-	updatevars(solver);
+	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
 			value(xl),
 			value(xm),
@@ -268,7 +268,7 @@ void test_all() {
 
 	printf("suggest to 70.0\n");
 	suggest(xm, 70.0);
-	updatevars(solver);
+	updateVars(solver);
 	dumpsolver(solver);
 
 	printf("xl: %f, xm: %f, xr: %f\n",
@@ -276,8 +276,8 @@ void test_all() {
 			value(xm),
 			value(xr));
 
-	deledit(xm);
-	updatevars(solver);
+	delEdit(xm);
+	updateVars(solver);
 	dumpsolver(solver);
 
 	printf("xl: %f, xm: %f, xr: %f\n",
@@ -285,7 +285,7 @@ void test_all() {
 			value(xm),
 			value(xr));
 
-	delsolver(solver);
+	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
@@ -316,13 +316,13 @@ void test_binarytree() {
 	* 3   4 5   6
 	*/
 
-	pSolver = newsolver(&debug_allocf, null);
+	pSolver = newSolver(&debug_allocf, null);
 
 	/* Xroot=500, Yroot=10 */
 	arrX[0] = newVariable(pSolver);
 	arrY[0] = newVariable(pSolver);
-	addedit(arrX[0], AM_STRONG);
-	addedit(arrY[0], AM_STRONG);
+	addEdit(arrX[0], AM_STRONG);
+	addEdit(arrY[0], AM_STRONG);
 	suggest(arrX[0], 500.0f + X_OFFSET);
 	suggest(arrY[0], 10.0f);
 
@@ -388,7 +388,7 @@ void test_binarytree() {
 					value(arrX[i]), value(arrY[i]));
 	}*/
 
-	delsolver(pSolver);
+	delSolver(pSolver);
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
@@ -402,7 +402,7 @@ void test_unbounded() {
 	Constraint *c;
 	printf("\n\n==========\ntest unbound\n");
 
-	solver = newsolver(&debug_allocf, null);
+	solver = newSolver(&debug_allocf, null);
 	x = newVariable(solver);
 	y = newVariable(solver);
 
@@ -424,7 +424,7 @@ void test_unbounded() {
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	resetsolver(solver, 1);
+	resetSolver(solver, 1);
 
 	/* x >= 10.0 */
 	c = newConstraint(solver, AM_REQUIRED);
@@ -456,7 +456,7 @@ void test_unbounded() {
 	assert(ret == AM_UNBOUND);
 	dumpsolver(solver);
 
-	resetsolver(solver, 1);
+	resetSolver(solver, 1);
 
 	/* x >= 10.0 */
 	c = newConstraint(solver, AM_REQUIRED);
@@ -479,7 +479,7 @@ void test_unbounded() {
 
 	printf("x: %f\n", value(x));
 
-	resetsolver(solver, 1);
+	resetSolver(solver, 1);
 
 	/* x == 10.0 */
 	c = newConstraint(solver, AM_REQUIRED);
@@ -511,7 +511,7 @@ void test_unbounded() {
 	assert(ret == AM_OK);
 	dumpsolver(solver);
 
-	delsolver(solver);
+	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
@@ -524,7 +524,7 @@ void test_strength() {
 	Constraint *c;
 	printf("\n\n==========\ntest strength\n");
 
-	solver = newsolver(&debug_allocf, null);
+	solver = newSolver(&debug_allocf, null);
 	autoUpdate(solver, 1);
 	x = newVariable(solver);
 	y = newVariable(solver);
@@ -538,17 +538,17 @@ void test_strength() {
 	assert(value(x) == 50);
 	assert(value(y) == 50);
 
-	setstrength(c, AM_MEDIUM+10);
+	setStrength(c, AM_MEDIUM+10);
 	printf("%f, %f\n", value(x), value(y));
 	assert(value(x) == 40);
 	assert(value(y) == 40);
 
-	setstrength(c, AM_MEDIUM-10);
+	setStrength(c, AM_MEDIUM-10);
 	printf("%f, %f\n", value(x), value(y));
 	assert(value(x) == 50);
 	assert(value(y) == 50);
 
-	delsolver(solver);
+	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
@@ -579,7 +579,7 @@ void test_suggest() {
 	Variable* right_child_l,  right_child_w,  right_child_r;
 	printf("\n\n==========\ntest suggest\n");
 
-	solver = newsolver(&debug_allocf, null);
+	solver = newSolver(&debug_allocf, null);
 	splitter_l = newVariable(solver);
 	splitter_w = newVariable(solver);
 	splitter_r = newVariable(solver);
@@ -647,7 +647,7 @@ void test_suggest() {
 		printf("\n");
 	}
 
-	delsolver(solver);
+	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
@@ -655,14 +655,14 @@ void test_suggest() {
 }
 
 void test_cycling() {
-	Solver * solver = newsolver(null, null);
+	Solver * solver = newSolver(null, null);
 
 	Variable * va = newVariable(solver);
 	Variable * vb = newVariable(solver);
 	Variable * vc = newVariable(solver);
 	Variable * vd = newVariable(solver);
 
-	addedit(va, AM_STRONG);
+	addEdit(va, AM_STRONG);
 	printf("after edit\n");
 	dumpsolver(solver);
 
