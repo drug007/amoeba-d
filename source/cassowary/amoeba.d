@@ -21,9 +21,15 @@ enum AM_MEDIUM      = cast(am_Float)1000;
 enum AM_WEAK        = cast(am_Float)1;
 
 version (AM_USE_FLOAT)
+{
 	alias am_Float = float;
+	enum AM_FLOAT_EPS = 1e-4f;
+}
 else
+{
 	alias am_Float = double;
+	enum AM_FLOAT_EPS = 1e-6;
+}
 
 alias am_Allocf = void* function (void *ud, void *ptr, size_t nsize, size_t osize);
 
@@ -45,17 +51,6 @@ pragma(inline, true)
 enum AM_POOLSIZE     = 4096;
 enum AM_MIN_HASHSIZE = 4;
 enum AM_MAX_SIZET    = ((~cast(size_t)0)-100);
-
-version (AM_USE_FLOAT)
-{
-	enum AM_FLOAT_MAX = float.max;
-	enum AM_FLOAT_EPS = 1e-4f;
-}
-else
-{
-	enum  AM_FLOAT_MAX = double.max;
-	enum AM_FLOAT_EPS = 1e-6;
-}
 
 struct am_Symbol {
 	import mir.bitmanip : bitfields;
@@ -610,7 +605,7 @@ void am_mergerow(am_Solver *solver, am_Row *row, am_Symbol var, am_Float multipl
 int am_optimize(am_Solver *solver, am_Row *objective) {
     for (;;) {
         am_Symbol enter = am_Symbol(), exit = am_Symbol();
-        am_Float r, min_ratio = AM_FLOAT_MAX;
+        am_Float r, min_ratio = am_Float.max;
         am_Row tmp = void;
 		am_Row *row = null;
         am_Term *term = null;
@@ -756,7 +751,7 @@ int am_try_addrow(am_Solver *solver, am_Row *row, am_Constraint *cons) {
 
 am_Symbol am_get_leaving_row(am_Solver *solver, am_Symbol marker) {
     am_Symbol first = am_Symbol(), second = am_Symbol(), third = am_Symbol();
-    am_Float r1 = AM_FLOAT_MAX, r2 = AM_FLOAT_MAX;
+    am_Float r1 = am_Float.max, r2 = am_Float.max;
     am_Row *row = null;
     while (am_nextentry(&solver.rows, cast(am_Entry**)&row)) {
         am_Term *term = cast(am_Term*)am_gettable(&row.terms, marker);
@@ -799,7 +794,7 @@ void am_dual_optimize(am_Solver *solver) {
         am_Symbol enter = am_Symbol(), exit = am_key(row), curr;
         am_Term *objterm = void;
 		am_Term *term = null;
-        am_Float r, min_ratio = AM_FLOAT_MAX;
+        am_Float r, min_ratio = am_Float.max;
         solver.infeasible_rows = row.infeasible_next;
         row.infeasible_next = am_Symbol();
         if (row.constant >= 0.0f) continue;
