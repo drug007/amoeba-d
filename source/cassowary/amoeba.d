@@ -52,7 +52,8 @@ enum AM_POOLSIZE     = 4096;
 enum AM_MIN_HASHSIZE = 4;
 enum AM_MAX_SIZET    = ((~cast(size_t)0)-100);
 
-struct Symbol {
+struct Symbol
+{
 	import mir.bitmanip : bitfields;
 	mixin(bitfields!(
 		uint, "id",    30,
@@ -60,7 +61,8 @@ struct Symbol {
 	debug string label;
 }
 
-struct MemPool {
+struct MemPool
+{
 	size_t size;
 	void*  freed;
 	void*  pages;
@@ -72,42 +74,49 @@ struct MemPool {
 	}
 }
 
-struct Entry {
-	int       next;
+struct Entry
+{
+	int    next;
 	Symbol key;
 }
 
-struct Table {
-	size_t    size;
-	size_t    count;
-	size_t    entry_size;
-	size_t    lastfree;
-	Entry *hash;
+struct Table
+{
+	size_t size;
+	size_t count;
+	size_t entry_size;
+	size_t lastfree;
+	Entry  *hash;
 }
 
-struct VarEntry {
+struct VarEntry
+{
 	Entry     entry;
 	Variable *variable;
 }
 
-struct ConsEntry {
+struct ConsEntry
+{
 	Entry       entry;
 	Constraint *constraint;
 }
 
-struct Term {
+struct Term
+{
 	Entry entry;
 	Float multiplier;
 }
 
-struct Row {
+struct Row
+{
 	Entry  entry;
 	Symbol infeasible_next;
 	Table  terms;
 	Float  constant;
 }
 
-struct Variable {
+struct Variable
+{
 	Symbol      sym;
 	Symbol      dirty_next;
 	uint        refcount;
@@ -117,29 +126,31 @@ struct Variable {
 	Float       value;
 }
 
-struct Constraint {
+struct Constraint
+{
 	Row     expression;
 	Symbol  marker;
 	Symbol  other;
-	int        relation;
+	int     relation;
 	Solver *solver;
 	Float   strength;
 }
 
-struct Solver {
+struct Solver
+{
 	am_Allocf  allocf;
 	void      *ud;
-	Row     objective;
-	Table   vars;            /* symbol . VarEntry */
-	Table   constraints;     /* symbol . ConsEntry */
-	Table   rows;            /* symbol . Row */
-	MemPool varpool;
-	MemPool conspool;
+	Row        objective;
+	Table      vars;            /* symbol . VarEntry */
+	Table      constraints;     /* symbol . ConsEntry */
+	Table      rows;            /* symbol . Row */
+	MemPool    varpool;
+	MemPool    conspool;
 	uint       symbol_count;
 	uint       constraint_count;
 	uint       auto_update;
-	Symbol  infeasible_rows;
-	Symbol  dirty_vars;
+	Symbol     infeasible_rows;
+	Symbol     dirty_vars;
 }
 
 /* utils */
