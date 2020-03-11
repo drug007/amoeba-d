@@ -123,6 +123,8 @@ struct Variable
 	Constraint *constraint;
 	Float       edit_value;
 	Float       value;
+
+	int id() { return sym.id; }
 }
 
 struct Constraint
@@ -431,7 +433,6 @@ void substitute(Solver *solver, Row *row, Symbol entry, const Row *other)
 
 /* variables & constraints */
 
-int variableId(Variable *var) { return var ? var.sym.id : -1; }
 Float value(Variable *var) { return var ? var.value : 0.0f; }
 void usevariable(Variable *var) { if (var) ++var.refcount; }
 

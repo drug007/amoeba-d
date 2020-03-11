@@ -116,10 +116,9 @@ void test_all() {
 	xm = newVariable(solver);
 	xr = newVariable(solver);
 
-	assert(variableId(null) == -1);
-	assert(variableId(xl) == 1);
-	assert(variableId(xm) == 2);
-	assert(variableId(xr) == 3);
+	assert(xl.id == 1);
+	assert(xm.id == 2);
+	assert(xr.id == 3);
 	assert(!hasEdit(null));
 	assert(!hasEdit(xl));
 	assert(!hasEdit(xm));
