@@ -32,9 +32,13 @@ else
 
 alias Allocf = void* function (void *ud, void *ptr, size_t nsize, size_t osize);
 
+/// external variable, corresponds to the variable created by you the user
 enum AM_EXTERNAL = 0;
+/// slack symbol, used to represent inequalities
 enum AM_SLACK    = 1;
+/// error symbol, used to represent non-required constraints
 enum AM_ERROR    = 2;
+/// dummy variable, always zero, used to keep track of the impact of an external variable in the tableau
 enum AM_DUMMY    = 3;
 
 pragma(inline, true)
