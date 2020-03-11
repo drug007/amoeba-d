@@ -399,6 +399,11 @@ void multiply(Row *row, Float multiplier)
 		term.multiplier *= multiplier;
 }
 
+/// Insert a symbol into the row with a given multiplier.
+///
+/// If the symbol already exists in the row, the multiplier will be
+/// added to the existing multiplier. If the resulting multiplier
+/// is zero, the symbol will be removed from the row.
 void addVar(Solver *solver, Row *row, Symbol sym, Float value)
 {
 	Term *term;
