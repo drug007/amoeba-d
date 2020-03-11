@@ -385,17 +385,17 @@ void test_binarytree()
 	nPointsCount = nCurrentRowFirstPointIndex + nCurrentRowPointsCount;
 	pSolver.updateVars;
 	dumpsolver(pSolver);
+	assert(POINT_COUNT == nPointsCount);
 
 	{
-		int i;
-		for (i = 0; i < nPointsCount; i++)
+		foreach (i; 0..nPointsCount)
 			printf("Point %d: (%f, %f)\n", i,
 					arrX[i].value, arrY[i].value);
 	}
 
 	delSolver(pSolver);
-	printf("allmem = %d\n", cast(int)allmem);
-	printf("maxmem = %d\n", cast(int)maxmem);
+	printf("allmem = %ld\n", allmem);
+	printf("maxmem = %ld\n", maxmem);
 	assert(allmem == 0);
 	maxmem = 0;
 }
