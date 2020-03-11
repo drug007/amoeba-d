@@ -290,7 +290,8 @@ void test_all() {
 	maxmem = 0;
 }
 
-void test_binarytree() {
+void test_binarytree()
+{
 	const int NUM_ROWS = 9;
 	const int X_OFFSET = 0;
 	int nPointsCount, nResult, nRow;
@@ -324,13 +325,15 @@ void test_binarytree() {
 	suggest(arrX[0], 500.0f + X_OFFSET);
 	suggest(arrY[0], 10.0f);
 
-	for (nRow = 1; nRow < NUM_ROWS; nRow++) {
+	for (nRow = 1; nRow < NUM_ROWS; nRow++)
+	{
 		int nPreviousRowFirstPointIndex = nCurrentRowFirstPointIndex;
 		int nPoint, nParentPoint = 0;
 		nCurrentRowFirstPointIndex += nCurrentRowPointsCount;
 		nCurrentRowPointsCount *= 2;
 
-		for (nPoint = 0; nPoint < nCurrentRowPointsCount; nPoint++) {
+		for (nPoint = 0; nPoint < nCurrentRowPointsCount; nPoint++)
+		{
 			arrX[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
 			arrY[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
 
@@ -343,7 +346,8 @@ void test_binarytree() {
 			nResult = add(pC);
 			assert(nResult == AM_OK);
 
-			if (nPoint > 0) {
+			if (nPoint > 0)
+			{
 				/* Xcur >= XPrev + 5 */
 				pC = newConstraint(pSolver, AM_REQUIRED);
 				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
@@ -352,8 +356,11 @@ void test_binarytree() {
 				addConstant(pC, 5.0);
 				nResult = add(pC);
 				assert(nResult == AM_OK);
-			} else {
-				/* When these lines added it crashes at the line 109 */
+			}
+			else
+			{
+				/* Xcur >= 0 */
+				/* Comment from original C version: "When these lines added it crashes at the line 109" */
 				pC = newConstraint(pSolver, AM_REQUIRED);
 				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 1.0);
 				setRelation(pC, AM_GREATEQUAL);
@@ -362,14 +369,15 @@ void test_binarytree() {
 				assert(nResult == AM_OK);
 			}
 
-			if ((nPoint % 2) == 1) {
+			if ((nPoint % 2) == 1)
+			{
 				/* Xparent = 0.5 * Xcur + 0.5 * Xprev */
 				pC = newConstraint(pSolver, AM_REQUIRED);
 				addTerm(pC, arrX[nPreviousRowFirstPointIndex + nParentPoint], 1.0);
 				setRelation(pC, AM_EQUAL);
 				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint], 0.5);
 				addTerm(pC, arrX[nCurrentRowFirstPointIndex + nPoint - 1], 0.5);
-				/* It crashes here (at the 3rd call of add(...))!  */
+				/* Comment from original C version: "It crashes here (at the 3rd call of add(...))!" */
 				nResult = add(pC);
 				assert(nResult == AM_OK);
 
