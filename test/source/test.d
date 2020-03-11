@@ -6,7 +6,6 @@ import cassowary.amoeba;
 
 static size_t allmem = 0;
 static size_t maxmem = 0;
-static void *END = null;
 
 void *debug_allocf(void *ud, void *ptr, size_t ns, size_t os) nothrow @nogc
 {
