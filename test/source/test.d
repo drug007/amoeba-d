@@ -653,8 +653,8 @@ void test_suggest() {
 	}
 
 	delSolver(solver);
-	printf("allmem = %d\n", cast(int)allmem);
-	printf("maxmem = %d\n", cast(int)maxmem);
+	printf("allmem = %ld\n", allmem);
+	printf("maxmem = %ld\n", maxmem);
 	assert(allmem == 0);
 	maxmem = 0;
 }
