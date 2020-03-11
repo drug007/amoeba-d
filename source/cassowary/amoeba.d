@@ -2,7 +2,6 @@ module cassowary.amoeba;
 
 import core.stdc.string : memset, memcpy;
 
-extern(C):
 @nogc:
 nothrow:
 

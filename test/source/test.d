@@ -8,7 +8,6 @@ static size_t allmem = 0;
 static size_t maxmem = 0;
 static void *END = null;
 
-extern(C)
 void *debug_allocf(void *ud, void *ptr, size_t ns, size_t os) nothrow @nogc
 {
 	void *newptr = null;
@@ -24,7 +23,6 @@ else
 	return newptr;
 }
 
-extern(C)
 void *null_allocf(void *ud, void *ptr, size_t ns, size_t os) nothrow @nogc
 { cast(void)ud, cast(void)ptr, cast(void)ns, cast(void)os; return null; }
 
