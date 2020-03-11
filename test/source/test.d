@@ -299,12 +299,9 @@ void test_binarytree()
 	int nCurrentRowFirstPointIndex = 0;
 	Constraint *pC;
 	Solver *pSolver;
-	Variable** arrX, arrY;
+	Variable*[POINT_COUNT] arrX, arrY;
 
 	printf("\n\n==========\ntest binarytree\n");
-	arrX = cast(Variable**)malloc(POINT_COUNT * 2 * (Variable*).sizeof);
-	if (arrX is null) return;
-	arrY = arrX + POINT_COUNT;
 
 	/* Create set of rules to distribute vertexes of a binary tree like this one:
 	*      0
@@ -400,7 +397,6 @@ void test_binarytree()
 	printf("allmem = %d\n", cast(int)allmem);
 	printf("maxmem = %d\n", cast(int)maxmem);
 	assert(allmem == 0);
-	free(arrX);
 	maxmem = 0;
 }
 
