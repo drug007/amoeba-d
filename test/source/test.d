@@ -291,9 +291,10 @@ void test_all() {
 
 void test_binarytree()
 {
-	const int NUM_ROWS = 9;
+	const int NUM_ROWS = 2;
+	const int POINT_COUNT = 2^^NUM_ROWS - 1;
 	const int X_OFFSET = 0;
-	int nPointsCount, nResult, nRow;
+	int nPointsCount, nResult;
 	int nCurrentRowPointsCount = 1;
 	int nCurrentRowFirstPointIndex = 0;
 	Constraint *pC;
@@ -301,9 +302,9 @@ void test_binarytree()
 	Variable** arrX, arrY;
 
 	printf("\n\n==========\ntest binarytree\n");
-	arrX = cast(Variable**)malloc(2048 * (Variable*).sizeof);
+	arrX = cast(Variable**)malloc(POINT_COUNT * 2 * (Variable*).sizeof);
 	if (arrX is null) return;
-	arrY = arrX + 1024;
+	arrY = arrX + POINT_COUNT;
 
 	/* Create set of rules to distribute vertexes of a binary tree like this one:
 	*      0
@@ -324,14 +325,14 @@ void test_binarytree()
 	suggest(arrX[0], 500.0f + X_OFFSET);
 	suggest(arrY[0], 10.0f);
 
-	for (nRow = 1; nRow < NUM_ROWS; nRow++)
+	foreach (nRow; 1..NUM_ROWS)
 	{
 		int nPreviousRowFirstPointIndex = nCurrentRowFirstPointIndex;
-		int nPoint, nParentPoint = 0;
+		int nParentPoint = 0;
 		nCurrentRowFirstPointIndex += nCurrentRowPointsCount;
 		nCurrentRowPointsCount *= 2;
 
-		for (nPoint = 0; nPoint < nCurrentRowPointsCount; nPoint++)
+		foreach (nPoint; 0..nCurrentRowPointsCount)
 		{
 			arrX[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
 			arrY[nCurrentRowFirstPointIndex + nPoint] = newVariable(pSolver);
@@ -385,13 +386,15 @@ void test_binarytree()
 		}
 	}
 	nPointsCount = nCurrentRowFirstPointIndex + nCurrentRowPointsCount;
+	pSolver.updateVars;
+	dumpsolver(pSolver);
 
-	/*{
+	{
 		int i;
 		for (i = 0; i < nPointsCount; i++)
 			printf("Point %d: (%f, %f)\n", i,
-					arrX.valuei]), arrY.valuei]));
-	}*/
+					arrX[i].value, arrY[i].value);
+	}
 
 	delSolver(pSolver);
 	printf("allmem = %d\n", cast(int)allmem);
