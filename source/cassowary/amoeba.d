@@ -52,7 +52,7 @@ pragma(inline, true)
 
 enum AM_POOLSIZE     = 4096;
 enum AM_MIN_HASHSIZE = 4;
-enum AM_MAX_SIZET    = ((~cast(size_t)0)-100);
+enum AM_MAX_SIZET    = size_t.max-100;
 
 struct Symbol
 {
