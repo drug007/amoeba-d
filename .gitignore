@@ -13,3 +13,5 @@ core
 /amoeba_test
 *.a
 *.selections.json
+/skeleton.html
+generated-docs
