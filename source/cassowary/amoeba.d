@@ -125,6 +125,7 @@ struct Variable
 	Float       value;
 
 	int id() { return sym.id; }
+	void usevariable() @nogc nothrow { ++refcount; }
 }
 
 struct Constraint
@@ -434,7 +435,6 @@ void substitute(Solver *solver, Row *row, Symbol entry, const Row *other)
 /* variables & constraints */
 
 Float value(Variable *var) { return var ? var.value : 0.0f; }
-void usevariable(Variable *var) { if (var) ++var.refcount; }
 
 Variable *sym2var(Solver *solver, Symbol sym)
 {
@@ -517,7 +517,7 @@ int mergeConstraint(Constraint *cons, Constraint *other, Float multiplier)
 	if (cons.relation == AM_GREATEQUAL) multiplier = -multiplier;
 	cons.expression.constant += other.expression.constant*multiplier;
 	while (nextEntry(&other.expression.terms, cast(Entry**)&term)) {
-		usevariable(sym2var(cons.solver, key(term)));
+		sym2var(cons.solver, key(term)).usevariable;
 		addVar(cons.solver, &cons.expression, key(term),
 				term.multiplier*multiplier);
 	}
@@ -543,7 +543,7 @@ int addTerm(Constraint *cons, Variable *var, Float multiplier = 1.0)
 	assert(var.solver == cons.solver);
 	if (cons.relation == AM_GREATEQUAL) multiplier = -multiplier;
 	addVar(cons.solver, &cons.expression, var.sym, multiplier);
-	usevariable(var);
+	var.usevariable;
 	return AM_OK;
 }
 
