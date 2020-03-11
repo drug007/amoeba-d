@@ -384,8 +384,7 @@ void resetRow(Row *row)
 
 void initRow(Row *row)
 {
-	// key(row) = Symbol();
-	(cast(Entry*)(row)).key  = Symbol();
+	row.entry.key  = Symbol();
 	row.infeasible_next = Symbol();
 	row.constant = 0.0f;
 	initTable(&row.terms, Term.sizeof);
