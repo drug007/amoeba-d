@@ -240,17 +240,17 @@ void test_all() {
 	dumpsolver(solver);
 	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
-			value(xl),
-			value(xm),
-			value(xr));
+			xl.value,
+			xm.value,
+			xr.value);
 
 	addEdit(xm, AM_MEDIUM);
 	dumpsolver(solver);
 	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
-			value(xl),
-			value(xm),
-			value(xr));
+			xl.value,
+			xm.value,
+			xr.value);
 
 	assert(hasEdit(xm));
 
@@ -259,9 +259,9 @@ void test_all() {
 	dumpsolver(solver);
 	updateVars(solver);
 	printf("xl: %f, xm: %f, xr: %f\n",
-			value(xl),
-			value(xm),
-			value(xr));
+			xl.value,
+			xm.value,
+			xr.value);
 
 	printf("suggest to 70.0\n");
 	suggest(xm, 70.0);
@@ -269,18 +269,18 @@ void test_all() {
 	dumpsolver(solver);
 
 	printf("xl: %f, xm: %f, xr: %f\n",
-			value(xl),
-			value(xm),
-			value(xr));
+			xl.value,
+			xm.value,
+			xr.value);
 
 	delEdit(xm);
 	updateVars(solver);
 	dumpsolver(solver);
 
 	printf("xl: %f, xm: %f, xr: %f\n",
-			value(xl),
-			value(xm),
-			value(xr));
+			xl.value,
+			xm.value,
+			xr.value);
 
 	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
@@ -390,7 +390,7 @@ void test_binarytree()
 		int i;
 		for (i = 0; i < nPointsCount; i++)
 			printf("Point %d: (%f, %f)\n", i,
-					value(arrX[i]), value(arrY[i]));
+					arrX.valuei]), arrY.valuei]));
 	}*/
 
 	delSolver(pSolver);
@@ -482,7 +482,7 @@ void test_unbounded() {
 	assert(ret == AM_UNBOUND);
 	dumpsolver(solver);
 
-	printf("x: %f\n", value(x));
+	printf("x: %f\n", x.value);
 
 	resetSolver(solver, 1);
 
@@ -539,19 +539,19 @@ void test_strength() {
 			y, 1.0, END);
 	new_constraint(solver, AM_MEDIUM, x, 1.0, AM_EQUAL, 50, END);
 	c = new_constraint(solver, AM_MEDIUM-10, y, 1.0, AM_EQUAL, 40, END);
-	printf("%f, %f\n", value(x), value(y));
-	assert(value(x) == 50);
-	assert(value(y) == 50);
+	printf("%f, %f\n", x.value, y.value);
+	assert(x.value == 50);
+	assert(y.value == 50);
 
 	setStrength(c, AM_MEDIUM+10);
-	printf("%f, %f\n", value(x), value(y));
-	assert(value(x) == 40);
-	assert(value(y) == 40);
+	printf("%f, %f\n", x.value, y.value);
+	assert(x.value == 40);
+	assert(y.value == 40);
 
 	setStrength(c, AM_MEDIUM-10);
-	printf("%f, %f\n", value(x), value(y));
-	assert(value(x) == 50);
-	assert(value(y) == 50);
+	printf("%f, %f\n", x.value, y.value);
+	assert(x.value == 50);
+	assert(y.value == 50);
 
 	delSolver(solver);
 	printf("allmem = %d\n", cast(int)allmem);
@@ -641,14 +641,14 @@ void test_suggest() {
 	for(pos = -10; pos < 86; pos++) {
 		suggest(splitter_bar_l, pos);
 		printf("pos: %4g | ", pos);
-		printf("splitter_l l=%2g, w=%2g, r=%2g | ", value(splitter_l),
-				value(splitter_w), value(splitter_r));
-		printf("left_child_l l=%2g, w=%2g, r=%2g | ", value(left_child_l),
-				value(left_child_w), value(left_child_r));
-		printf("splitter_bar_l l=%2g, w=%2g, r=%2g | ", value(splitter_bar_l),
-				value(splitter_bar_w), value(splitter_bar_r));
-		printf("right_child_l l=%2g, w=%2g, r=%2g | ", value(right_child_l),
-				value(right_child_w), value(right_child_r));
+		printf("splitter_l l=%2g, w=%2g, r=%2g | ", splitter_l.value,
+				splitter_w.value, splitter_r.value);
+		printf("left_child_l l=%2g, w=%2g, r=%2g | ", left_child_l.value,
+				left_child_w.value, left_child_r.value);
+		printf("splitter_bar_l l=%2g, w=%2g, r=%2g | ", splitter_bar_l.value,
+				splitter_bar_w.value, splitter_bar_r.value);
+		printf("right_child_l l=%2g, w=%2g, r=%2g | ", right_child_l.value,
+				right_child_w.value, right_child_r.value);
 		printf("\n");
 	}
 

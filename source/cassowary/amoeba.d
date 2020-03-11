@@ -434,8 +434,6 @@ void substitute(Solver *solver, Row *row, Symbol entry, const Row *other)
 
 /* variables & constraints */
 
-Float value(Variable *var) { return var ? var.value : 0.0f; }
-
 Variable *sym2var(Solver *solver, Symbol sym)
 {
 	VarEntry *ve = cast(VarEntry*)getTable(&solver.vars, sym);
