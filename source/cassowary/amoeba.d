@@ -241,9 +241,9 @@ Symbol newSymbol(Solver *solver, int type)
 pragma(inline, true)
 {
 @nogc nothrow:
-	// #define offset(lhs, rhs) ((int)((char*)(lhs) - (char*)(rhs)))
+	// difference between two pointers
 	auto offset(L, R)(L lhs, R rhs) { return cast(int)(cast(char*)(lhs) - cast(char*)(rhs)); }
-	// #define index(h, i)      ((Entry*)((char*)(h) + (i)))
+	// return pointer to the given object `h` plus displacement `i` in bytes
 	auto index(H, I)(H h, I i) { return cast(Entry*)(cast(char*)(h) + (i)); }
 }
 
@@ -359,6 +359,7 @@ Entry *setTable(Solver *solver, Table *t, Symbol key) {
 	return e;
 }
 
+/// iterate over hash table `t` starting from entry `pentry`
 int nextEntry(const(Table) *t, Entry **pentry) {
 	size_t i = *pentry ? offset(*pentry, t.hash) + t.entry_size : 0;
 	size_t size = t.size*t.entry_size;
@@ -397,6 +398,7 @@ void initRow(Row *row)
 	initTable(&row.terms, Term.sizeof);
 }
 
+/// multiply the expression `row` by `multiplier`
 void multiply(Row *row, Float multiplier)
 {
 	Term *term = null;
