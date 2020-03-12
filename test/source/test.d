@@ -46,7 +46,7 @@ void dumprow(Row *row) {
 		if (multiplier < 0.0) multiplier = -multiplier;
 		if (!approx(multiplier, 1.0f))
 			printf("%g*", multiplier);
-		dumpkey(key(term));
+		dumpkey(term.key);
 	}
 	printf("\n");
 }
@@ -60,7 +60,7 @@ void dumpsolver(Solver *solver) {
 	printf("rows(%d):\n", cast(int)solver.rows.count);
 	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 		printf("%d. ", ++idx);
-		dumpkey(key(row));
+		dumpkey(row.key);
 		printf(" = ");
 		dumprow(row);
 	}

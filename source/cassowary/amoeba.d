@@ -96,18 +96,24 @@ struct VarEntry
 {
 	Entry     entry;
 	Variable *variable;
+
+	alias entry this;
 }
 
 struct ConsEntry
 {
 	Entry       entry;
 	Constraint *constraint;
+
+	alias entry this;
 }
 
 struct Term
 {
 	Entry entry;
 	Float multiplier;
+
+	alias entry this;
 }
 
 struct Row
@@ -116,6 +122,8 @@ struct Row
 	Symbol infeasible_next;
 	Table  terms;
 	Float  constant;
+
+	alias entry this;
 }
 
 struct Variable
@@ -140,6 +148,8 @@ struct Constraint
 	int     relation;
 	Solver *solver;
 	Float   strength;
+
+	alias expression this;
 }
 
 struct Solver
@@ -231,9 +241,6 @@ Symbol newSymbol(Solver *solver, int type)
 pragma(inline, true)
 {
 @nogc nothrow:
-	// #define key(entry) (((Entry*)(entry)).key)
-	auto key(E)(E entry) { return (cast(Entry*)(entry)).key; }
-
 	// #define offset(lhs, rhs) ((int)((char*)(lhs) - (char*)(rhs)))
 	auto offset(L, R)(L lhs, R rhs) { return cast(int)(cast(char*)(lhs) - cast(char*)(rhs)); }
 	// #define index(h, i)      ((Entry*)((char*)(h) + (i)))
@@ -423,7 +430,7 @@ void addRow(Solver *solver, Row *row, const Row *other, Float multiplier)
 	Term *term = null;
 	row.constant += other.constant*multiplier;
 	while (nextEntry(&other.terms, cast(Entry**)&term))
-		addVar(solver, row, key(term), term.multiplier*multiplier);
+		addVar(solver, row, term.key, term.multiplier*multiplier);
 }
 
 /// Solve the row for the given symbol.
@@ -505,7 +512,7 @@ Constraint* newConstraint(Solver *solver, Float strength)
 	initRow(&cons.expression);
 	(cast(Entry*)(cons)).key.id = ++solver.constraint_count;
 	(cast(Entry*)(cons)).key.type = AM_EXTERNAL;
-	(cast(ConsEntry*)setTable(solver, &solver.constraints, key(cons))).constraint = cons;
+	(cast(ConsEntry*)setTable(solver, &solver.constraints, cons.key)).constraint = cons;
 	return cons;
 }
 
@@ -516,11 +523,11 @@ void delConstraint(Constraint *cons)
 	ConsEntry *ce;
 	if (cons is null) return;
 	remove(cons);
-	ce = cast(ConsEntry*)getTable(&solver.constraints, key(cons));
+	ce = cast(ConsEntry*)getTable(&solver.constraints, cons.key);
 	assert(ce !is null);
 	delKey(&solver.constraints, &ce.entry);
 	while (nextEntry(&cons.expression.terms, cast(Entry**)&term))
-		delVariable(sym2var(solver, key(term)));
+		delVariable(sym2var(solver, term.key));
 	freeRow(solver, &cons.expression);
 	freeMem(&solver.conspool, cons);
 }
@@ -544,8 +551,8 @@ int mergeConstraint(Constraint *cons, Constraint *other, Float multiplier)
 	if (cons.relation == AM_GREATEQUAL) multiplier = -multiplier;
 	cons.expression.constant += other.expression.constant*multiplier;
 	while (nextEntry(&other.expression.terms, cast(Entry**)&term)) {
-		sym2var(cons.solver, key(term)).usevariable;
-		addVar(cons.solver, &cons.expression, key(term),
+		sym2var(cons.solver, term.key).usevariable;
+		addVar(cons.solver, &cons.expression, term.key,
 				term.multiplier*multiplier);
 	}
 	return AM_OK;
@@ -558,7 +565,7 @@ void resetConstraint(Constraint *cons)
 	remove(cons);
 	cons.relation = 0;
 	while (nextEntry(&cons.expression.terms, cast(Entry**)&term))
-		delVariable(sym2var(cons.solver, key(term)));
+		delVariable(sym2var(cons.solver, term.key));
 	resetRow(&cons.expression);
 }
 
@@ -616,7 +623,7 @@ void infeasible(Solver *solver, Row *row) {
 	if (isdummy(row.infeasible_next)) return;
 	row.infeasible_next.id = solver.infeasible_rows.id;
 	row.infeasible_next.type = AM_DUMMY;
-	solver.infeasible_rows = key(row);
+	solver.infeasible_rows = row.key;
 }
 
 void markDirty(Solver *solver, Variable *var) {
@@ -630,8 +637,8 @@ void substituteRows(Solver *solver, Symbol var, Row *expr) {
 	Row *row = null;
 	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 		substitute(solver, row, var, expr);
-		if (isexternal(key(row)))
-			markDirty(solver, sym2var(solver, key(row)));
+		if (isexternal(row.key))
+			markDirty(solver, sym2var(solver, row.key));
 		else if (row.constant < 0.0f)
 			infeasible(solver, row);
 	}
@@ -672,19 +679,19 @@ int optimize(Solver *solver, Row *objective) {
 
 		assert(solver.infeasible_rows.id == 0);
 		while (nextEntry(&objective.terms, cast(Entry**)&term)) {
-			if (!isdummy(key(term)) && term.multiplier < 0.0f)
-			{ enter = key(term); break; }
+			if (!isdummy(term.key) && term.multiplier < 0.0f)
+			{ enter = term.key; break; }
 		}
 		if (enter.id == 0) return AM_OK;
 
 		while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 			term = cast(Term*)getTable(&row.terms, enter);
-			if (term is null || !ispivotable(key(row))
+			if (term is null || !ispivotable(row.key)
 					|| term.multiplier > 0.0f) continue;
 			r = -row.constant / term.multiplier;
 			if (r < min_ratio || (approx(r, min_ratio)
-						&& key(row).id < exit.id))
-				min_ratio = r, exit = key(row);
+						&& row.key.id < exit.id))
+				min_ratio = r, exit = row.key;
 		}
 		assert(exit.id != 0);
 		if (exit.id == 0) return AM_FAILED;
@@ -704,8 +711,8 @@ Row makeRow(Solver *solver, Constraint *cons) {
 	initRow(&row);
 	row.constant = cons.expression.constant;
 	while (nextEntry(&cons.expression.terms, cast(Entry**)&term)) {
-		markDirty(solver, sym2var(solver, key(term)));
-		mergeRow(solver, &row, key(term), term.multiplier);
+		markDirty(solver, sym2var(solver, term.key));
+		mergeRow(solver, &row, term.key, term.multiplier);
 	}
 	if (cons.relation != AM_EQUAL) {
 		initSymbol(solver, &cons.marker, AM_SLACK);
@@ -761,7 +768,7 @@ int addWithArtificial(Solver *solver, Row *row, Constraint *cons)
 		Symbol entry = Symbol();
 		if (isConstant(&tmp)) { freeRow(solver, &tmp); return ret; }
 		while (nextEntry(&tmp.terms, cast(Entry**)&term))
-			if (ispivotable(key(term))) { entry = key(term); break; }
+			if (ispivotable(term.key)) { entry = term.key; break; }
 		if (entry.id == 0) { freeRow(solver, &tmp); return AM_UNBOUND; }
 		solveFor(solver, &tmp, entry, a);
 		substituteRows(solver, entry, &tmp);
@@ -782,7 +789,7 @@ int tryAddRow(Solver *solver, Row *row, Constraint *cons)
 	Symbol subject = Symbol();
 	Term *term = null;
 	while (nextEntry(&row.terms, cast(Entry**)&term))
-		if (isexternal(key(term))) { subject = key(term); break; }
+		if (isexternal(term.key)) { subject = term.key; break; }
 	if (subject.id == 0 && ispivotable(cons.marker)) {
 		Term *mterm = cast(Term*)getTable(&row.terms, cons.marker);
 		if (mterm.multiplier < 0.0f) subject = cons.marker;
@@ -793,7 +800,7 @@ int tryAddRow(Solver *solver, Row *row, Constraint *cons)
 	}
 	if (subject.id == 0) {
 		while (nextEntry(&row.terms, cast(Entry**)&term))
-			if (!isdummy(key(term))) break;
+			if (!isdummy(term.key)) break;
 		if (term is null) {
 			if (nearZero(row.constant))
 				subject = cons.marker;
@@ -819,14 +826,14 @@ Symbol getLeavingRow(Solver *solver, Symbol marker)
 	while (nextEntry(&solver.rows, cast(Entry**)&row)) {
 		Term *term = cast(Term*)getTable(&row.terms, marker);
 		if (term is null) continue;
-		if (isexternal(key(row))) third = key(row);
+		if (isexternal(row.key)) third = row.key;
 		else if (term.multiplier < 0.0f) {
 			Float r = -row.constant / term.multiplier;
-			if (r < r1) r1 = r, first = key(row);
+			if (r < r1) r1 = r, first = row.key;
 		}
 		else {
 			Float r = row.constant / term.multiplier;
-			if (r < r2) r2 = r, second = key(row);
+			if (r < r2) r2 = r, second = row.key;
 		}
 	}
 	return first.id ? first : second.id ? second : third;
@@ -843,8 +850,8 @@ void deltaEditConstant(Solver *solver, Float delta, Constraint *cons)
 		Term *term = cast(Term*)getTable(&row.terms, cons.marker);
 		if (term is null) continue;
 		row.constant += term.multiplier*delta;
-		if (isexternal(key(row)))
-			markDirty(solver, sym2var(solver, key(row)));
+		if (isexternal(row.key))
+			markDirty(solver, sym2var(solver, row.key));
 		else if (row.constant < 0.0f)
 			infeasible(solver, row);
 	}
@@ -856,7 +863,7 @@ void dualOptimize(Solver *solver)
 		Row tmp = void;
 		Row *row =
 			cast(Row*)getTable(&solver.rows, solver.infeasible_rows);
-		Symbol enter = Symbol(), exit = key(row), curr;
+		Symbol enter = Symbol(), exit = row.key, curr;
 		Term *objterm = void;
 		Term *term = null;
 		Float r, min_ratio = Float.max;
@@ -864,7 +871,7 @@ void dualOptimize(Solver *solver)
 		row.infeasible_next = Symbol();
 		if (row.constant >= 0.0f) continue;
 		while (nextEntry(&row.terms, cast(Entry**)&term)) {
-			if (isdummy(curr = key(term)) || term.multiplier <= 0.0f)
+			if (isdummy(curr = term.key) || term.multiplier <= 0.0f)
 				continue;
 			objterm = cast(Term*)getTable(&solver.objective.terms, curr);
 			r = objterm ? objterm.multiplier / term.multiplier : 0.0f;
