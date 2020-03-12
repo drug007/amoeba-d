@@ -290,7 +290,7 @@ void test_all() {
 
 void test_binarytree()
 {
-	const int NUM_ROWS = 2;
+	const int NUM_ROWS = 3;
 	const int POINT_COUNT = 2^^NUM_ROWS - 1;
 	const int X_OFFSET = 0;
 	int nPointsCount, nResult;
@@ -391,6 +391,12 @@ void test_binarytree()
 			printf("Point %d: (%f, %f)\n", i,
 					arrX[i].value, arrY[i].value);
 	}
+
+	import std.algorithm : equal;
+	import std.range : only;
+	alias pred = (a, b)=>approx(a.value,b);
+	assert(arrX[].equal!pred(only(500, 2.5, 997.5,  0,  5, 10, 1985)));
+	assert(arrY[].equal!pred(only( 10,  25,    25, 40, 40, 40,   40)));
 
 	delSolver(pSolver);
 	printf("allmem = %ld\n", allmem);
