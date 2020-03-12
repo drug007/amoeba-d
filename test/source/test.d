@@ -68,13 +68,11 @@ void dumpsolver(Solver *solver) {
 	printf("-------------------------------\n");
 }
 
-extern(C)
-Constraint* new_constraint(Solver* in_solver, double in_strength,
+Constraint* new_constraint(Args...)(Solver* in_solver, double in_strength,
 		Variable* in_term1, double in_factor1, int in_relation,
-		double in_constant, ...)
+		double in_constant, Args args)
 {
 	int result;
-	va_list argp;
 	Constraint* c;
 	assert(in_solver && in_term1);
 	c = newConstraint(in_solver, cast(Float)in_strength);
@@ -82,14 +80,16 @@ Constraint* new_constraint(Solver* in_solver, double in_strength,
 	addTerm(c, in_term1, cast(Float)in_factor1);
 	setRelation(c, in_relation);
 	if(in_constant) addConstant(c, cast(Float)in_constant);
-	va_start(argp, in_constant);
-	while(1) {
-		Variable* va_term = va_arg!(Variable*)(argp);
-		double va_factor = va_arg!double(argp);
-		if(va_term is null) break;
-		addTerm(c, va_term, cast(Float)va_factor);
-	}
-	va_end(argp);
+	static assert(Args.length % 2 == 0);
+	static foreach(i; 0..Args.length / 2)
+	{{
+		enum term_idx = 2*i;
+		enum fact_idx = 2*i + 1;
+
+		static assert(is(Args[term_idx] == Variable*));
+		static assert(is(Args[fact_idx] == Float));
+		addTerm(c, args[term_idx], args[fact_idx]);
+	}}
 	result = add(c);
 	assert(result == AM_OK);
 	return c;
@@ -534,10 +534,9 @@ void test_strength() {
 	y = newVariable(solver);
 
 	/* x <= y */
-	new_constraint(solver, AM_STRONG, x, 1.0, AM_LESSEQUAL, 0.0,
-			y, 1.0, END);
-	new_constraint(solver, AM_MEDIUM, x, 1.0, AM_EQUAL, 50, END);
-	c = new_constraint(solver, AM_MEDIUM-10, y, 1.0, AM_EQUAL, 40, END);
+	new_constraint(solver, AM_STRONG, x, 1.0, AM_LESSEQUAL, 0.0, y, 1.0);
+	new_constraint(solver, AM_MEDIUM, x, 1.0, AM_EQUAL, 50);
+	c = new_constraint(solver, AM_MEDIUM-10, y, 1.0, AM_EQUAL, 40);
 	printf("%f, %f\n", x.value, y.value);
 	assert(x.value == 50);
 	assert(y.value == 50);
@@ -602,39 +601,39 @@ void test_suggest() {
 	/* splitter_bar_r = splitter_bar_l + splitter_bar_w */
 	/* right_child_r = right_child_l + right_child_w */
 	new_constraint(solver, AM_REQUIRED, splitter_r, 1.0, AM_EQUAL, 0.0,
-			splitter_l, 1.0, splitter_w, 1.0, END);
+			splitter_l, 1.0, splitter_w, 1.0);
 	new_constraint(solver, AM_REQUIRED, left_child_r, 1.0, AM_EQUAL, 0.0,
-			left_child_l, 1.0, left_child_w, 1.0, END);
+			left_child_l, 1.0, left_child_w, 1.0);
 	new_constraint(solver, AM_REQUIRED, splitter_bar_r, 1.0, AM_EQUAL, 0.0,
-			splitter_bar_l, 1.0, splitter_bar_w, 1.0, END);
+			splitter_bar_l, 1.0, splitter_bar_w, 1.0);
 	new_constraint(solver, AM_REQUIRED, right_child_r, 1.0, AM_EQUAL, 0.0,
-			right_child_l, 1.0, right_child_w, 1.0, END);
+			right_child_l, 1.0, right_child_w, 1.0);
 
 	/* splitter_bar_w = 6 */
 	/* splitter_bar_l >= splitter_l + delta */
 	/* splitter_bar_r <= splitter_r - delta */
 	/* left_child_r = splitter_bar_l */
 	/* right_child_l = splitter_bar_r */
-	new_constraint(solver, AM_REQUIRED, splitter_bar_w, 1.0, AM_EQUAL, 6.0, END);
+	new_constraint(solver, AM_REQUIRED, splitter_bar_w, 1.0, AM_EQUAL, 6.0);
 	new_constraint(solver, AM_REQUIRED, splitter_bar_l, 1.0, AM_GREATEQUAL,
-			delta, splitter_l, 1.0, END);
+			delta, splitter_l, 1.0);
 	new_constraint(solver, AM_REQUIRED, splitter_bar_r, 1.0, AM_LESSEQUAL,
-			-delta, splitter_r, 1.0, END);
+			-delta, splitter_r, 1.0);
 	new_constraint(solver, AM_REQUIRED, left_child_r, 1.0, AM_EQUAL, 0.0,
-			splitter_bar_l, 1.0, END);
+			splitter_bar_l, 1.0);
 	new_constraint(solver, AM_REQUIRED, right_child_l, 1.0, AM_EQUAL, 0.0,
-			splitter_bar_r, 1.0, END);
+			splitter_bar_r, 1.0);
 
 	/* right_child_r >= splitter_r + 1 */
 	/* left_child_w = 256 */
 	new_constraint(solver, strength1, right_child_r, 1.0, AM_GREATEQUAL, 1.0,
-			splitter_r, 1.0, END);
-	new_constraint(solver, strength2, left_child_w, 1.0, AM_EQUAL, 256.0, END);
+			splitter_r, 1.0);
+	new_constraint(solver, strength2, left_child_w, 1.0, AM_EQUAL, 256.0);
 
 	/* splitter_l = 0 */
 	/* splitter_r = 76 */
-	new_constraint(solver, AM_REQUIRED, splitter_l, 1.0, AM_EQUAL, 0.0, END);
-	new_constraint(solver, AM_REQUIRED, splitter_r, 1.0, AM_EQUAL, width, END);
+	new_constraint(solver, AM_REQUIRED, splitter_l, 1.0, AM_EQUAL, 0.0);
+	new_constraint(solver, AM_REQUIRED, splitter_r, 1.0, AM_EQUAL, width);
 
 	printf("\n\n==========\ntest suggest\n");
 	for(pos = -10; pos < 86; pos++) {
