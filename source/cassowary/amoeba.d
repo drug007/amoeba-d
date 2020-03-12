@@ -404,16 +404,21 @@ void multiply(Row *row, Float multiplier)
 /// If the symbol already exists in the row, the multiplier will be
 /// added to the existing multiplier. If the resulting multiplier
 /// is zero, the symbol will be removed from the row.
-void addVar(Solver *solver, Row *row, Symbol sym, Float value)
+void addVar(Solver *solver, Row *row, Symbol sym, Float multiplier)
 {
 	Term *term;
 	if (sym.id == 0) return;
 	if ((term = cast(Term*)getTable(&row.terms, sym)) is null)
 		term = cast(Term*)setTable(solver, &row.terms, sym);
-	if (nearZero(term.multiplier += value))
+	if (nearZero(term.multiplier += multiplier))
 		delKey(&row.terms, &term.entry);
 }
 
+/// Insert a row into this row with a given multiplier.
+///
+/// The constant and the cells of the other row will be multiplied by
+/// the multiplier and added to this row. Any cell with a resulting
+/// multiplier of zero will be removed from the row.
 void addRow(Solver *solver, Row *row, const Row *other, Float multiplier)
 {
 	Term *term = null;
@@ -422,6 +427,15 @@ void addRow(Solver *solver, Row *row, const Row *other, Float multiplier)
 		addVar(solver, row, key(term), term.multiplier*multiplier);
 }
 
+/// Solve the row for the given symbol.
+/// 
+/// This method assumes the row is of the form a * x + b * y + c = 0
+/// and (assuming solve for x) will modify the row to represent the
+/// right hand side of x = -b/a * y - c / a. The target symbol will
+/// be removed from the row, and the constant and other cells will
+/// be multiplied by the negative inverse of the target coefficient.
+///
+/// The given symbol *must* exist in the row.
 void solveFor(Solver *solver, Row *row, Symbol entry, Symbol exit)
 {
 	Term *term = cast(Term*)getTable(&row.terms, entry);
@@ -432,6 +446,13 @@ void solveFor(Solver *solver, Row *row, Symbol entry, Symbol exit)
 	if (exit.id != 0) addVar(solver, row, exit, reciprocal);
 }
 
+/// Substitute a symbol with the data from another row.
+///
+/// Given a row of the form a * x + b and a substitution of the
+/// form x = 3 * y + c the row will be updated to reflect the
+/// expression 3 * a * y + a * c + b.
+///
+/// If the symbol does not exist in the row, this is a no-op.
 void substitute(Solver *solver, Row *row, Symbol entry, const Row *other)
 {
 	Term *term = cast(Term*)getTable(&row.terms, entry);
