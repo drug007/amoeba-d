@@ -514,8 +514,8 @@ Constraint* newConstraint(Solver *solver, Float strength)
 	cons.solver   = solver;
 	cons.strength = nearZero(strength) ? AM_REQUIRED : strength;
 	initRow(&cons.expression);
-	(cast(Entry*)(cons)).key.id = ++solver.constraint_count;
-	(cast(Entry*)(cons)).key.type = AM_EXTERNAL;
+	cons.key.id = ++solver.constraint_count;
+	cons.key.type = AM_EXTERNAL;
 	(cast(ConsEntry*)setTable(solver, &solver.constraints, cons.key)).constraint = cons;
 	return cons;
 }
