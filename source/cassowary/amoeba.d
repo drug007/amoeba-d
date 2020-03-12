@@ -447,8 +447,10 @@ void addRow(Solver *solver, Row *row, const Row *other, Float multiplier)
 void solveFor(Solver *solver, Row *row, Symbol entry, Symbol exit)
 {
 	Term *term = cast(Term*)getTable(&row.terms, entry);
+	assert(term, "non existent var");
+	assert(entry.id != exit.id, "entry and exit symbols should be different");
+	assert(!nearZero(term.multiplier), "Symbols with zero multiplier are unacceptable");
 	Float reciprocal = 1.0f / term.multiplier;
-	assert(entry.id != exit.id && !nearZero(term.multiplier));
 	delKey(&row.terms, &term.entry);
 	multiply(row, -reciprocal);
 	if (exit.id != 0) addVar(solver, row, exit, reciprocal);
